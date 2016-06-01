@@ -1,0 +1,73 @@
+.happymailer-table {
+    border: none;
+    width: 100%;
+}
+
+.form-column, .preview-column {
+    width: 50%;
+    border: none;
+}
+
+.preview-column {
+    border-left: 1px solid #eee;
+}
+
+.cm-variable {
+    color: #0088ff !important;
+    font-weight: bold;
+}
+
+.CodeMirror {
+    border: 1px solid #ccc;
+    box-shadow: none !important;
+    border-radius: 4px;
+}
+
+#preview_container {
+    margin-top: 1em;
+    zoom: .3;
+    width: 865px;
+    height: 1763px;
+    background: url("iphone6.png");
+    position: relative;
+}
+
+#preview_btn {
+    position: absolute;
+    left: 373px;
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    cursor: pointer;
+    bottom: 56px;
+    background: url("refresh.png") center center no-repeat;
+    background-size: 70% 70%;
+    opacity: .3;
+}
+
+#preview_btn:hover {
+    opacity: .6;
+}
+
+#preview_btn:active {
+    opacity: 1;
+}
+
+#preview_background {
+    position: absolute;
+    background: #fff url("preloader.gif") no-repeat center center;
+    left: 57.5px;
+    width: 751px;
+    height: 1118px;
+    top: 430px;
+}
+
+#preview_container > iframe {
+    position: absolute;
+    left: 104.5px;
+    top: 430px;
+    width: 656px;
+    height: 1118px;
+    background: #fff;
+    border: none;
+}

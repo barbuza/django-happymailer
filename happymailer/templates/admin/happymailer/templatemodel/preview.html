@@ -1,0 +1,24 @@
+{% load admin_urls %}
+
+{% if variables|length %}
+  <h2>Variables:</h2>
+  <table>
+    <tbody>
+      {% for var in variables %}
+        <tr>
+          <th>{{ var.name }}</th>
+          <td>{{ var.value }}</td>
+          <td class="variable_value" data-variable="{{ var.name }}"></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
+
+<div id="preview_container">
+  <div id="preview_background"></div>
+  <div data-url="{% url opts|admin_urlname:'preview' %}"
+       data-template="{{ original.name }}"
+       id="preview_btn">
+  </div>
+</div>
