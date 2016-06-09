@@ -1,4 +1,5 @@
 from happymailer import Template, t
+from happymailer.fake import fake
 
 
 class DummyTemplate(Template):
@@ -13,3 +14,9 @@ class DummyTemplate(Template):
 
     def get_variables(self):
         return self.kwargs
+
+    @classmethod
+    def fake_variables(cls):
+        return {
+            'code': fake.ean()
+        }

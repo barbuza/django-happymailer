@@ -1,0 +1,15 @@
+.root {
+  flex-grow: 0;
+  flex-shrink: 1;
+}
+
+.title {
+  font-size: 1.2em;
+}
+
+.table {
+  margin-top: 1em;
+  border-left: 1px solid #eee;
+  border-right: 1px solid #eee;
+  width: 100%;
+}

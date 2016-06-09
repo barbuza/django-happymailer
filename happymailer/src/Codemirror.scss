@@ -1,0 +1,15 @@
+.root {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  overflow: hidden;
+
+  :global(.CodeMirror) {
+    height: auto;
+    z-index: 0;
+  }
+
+  :global(.cm-variable) {
+    color: #0088ff !important;
+    font-weight: bold;
+  }
+}

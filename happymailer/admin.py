@@ -1,6 +1,10 @@
+import json
+
 from django import forms
+from django.conf import settings
 from django.conf.urls import url
 from django.contrib import admin
+from django.core.urlresolvers import reverse
 from django.http import Http404, JsonResponse, HttpResponseBadRequest
 
 from . import fake
@@ -26,6 +30,7 @@ class FakedataForm(forms.Form):
     template = forms.CharField()
     body = forms.CharField()
     subject = forms.CharField()
+    variables = forms.CharField()
 
     def __init__(self, *args, **kwargs):
         super(FakedataForm, self).__init__(*args, **kwargs)
@@ -52,15 +57,15 @@ class TemplateAdmin(admin.ModelAdmin):
         form = FakedataForm(request.POST)
         if not form.is_valid():
             return HttpResponseBadRequest()
+        variables = json.loads(form.cleaned_data['variables'])
         template_cls = get_template(form.cleaned_data['template'])
         layout_cls = get_layout(form.cleaned_data['layout'])
         kwargs = fake.generate(template_cls.kwargs)
-        tmpl = template_cls('spam', _force_layout_cls=layout_cls, **kwargs)
+        tmpl = template_cls('spam', _force_layout_cls=layout_cls, _force_variables=variables, **kwargs)
         tmpl.body = form.cleaned_data['body']
 
         return JsonResponse({
-            'html': tmpl.compile(),
-            'variables': {name: repr(value) for name, value in tmpl.variables.items()}
+            'html': tmpl.compile()
         })
 
     def send_test(self, request):
@@ -103,9 +108,26 @@ class TemplateAdmin(admin.ModelAdmin):
         if not template:
             raise Http404()
 
+        variables = template.fake_variables()
+
         extra_context = dict(
             extra_context or {},
-            variables=[{'name': x.name, 'value': repr(x.trafaret)}
-                       for x in template.variables.keys]
+            happymailer_config=json.dumps({
+                'staticUrl': settings.STATIC_URL + 'happymailer/',
+                'template': {
+                    'template': model.name,
+                    'body': model.body,
+                    'layout': model.layout,
+                    'enabled': model.enabled,
+                    'subject': model.subject
+                },
+                'previewUrl': reverse('admin:happymailer_templatemodel_preview'),
+                'layouts': [{'value': cls.name, 'label': cls.description or cls.name}
+                            for cls in layout_classes],
+                'variables': [{'name': x.name,
+                               'type': repr(x.trafaret),
+                               'value': variables.get(x.name, fake.generate(x.trafaret))}
+                              for x in template.variables.keys]
+            }).replace('<', '\\u003C'),
         )
         return super(TemplateAdmin, self).changeform_view(request, object_id, form_url, extra_context)

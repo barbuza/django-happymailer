@@ -7,6 +7,7 @@ from django.template import Template as DjangoTemplate, Context
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 
+from . import fake
 from .utils import all_template_classes, all_layout_classes, get_layout, TemplateConfigurationError
 
 __all__ = ('Template', 'Layout', 't')
@@ -90,7 +91,7 @@ class Template(six.with_metaclass(TemplateMeta)):
     kwargs = {}
     abstract = True
 
-    def __init__(self, recipient, _force_layout_cls=None, **kwargs):
+    def __init__(self, recipient, _force_layout_cls=None, _force_variables=None, **kwargs):
         assert not self.abstract
         self.recipient = recipient
         if _force_layout_cls:
@@ -102,7 +103,18 @@ class Template(six.with_metaclass(TemplateMeta)):
         if not self.layout_cls:
             raise TemplateConfigurationError('no layout specified for {} template'.format(self.name))
         self.kwargs = self.kwargs.check_and_return(kwargs)
-        self.variables = self.variables.check_and_return(self.get_variables())
+        if _force_variables:
+            self.variables = _force_variables
+        else:
+            self.variables = self.variables.check_and_return(self.get_variables())
+
+    @classmethod
+    def fake_variables(cls):
+        return fake.generate(cls.variables)
+
+    @classmethod
+    def fake_kwargs(cls):
+        return fake.generate(cls.kwargs)
 
     @cached_property
     def model(self):

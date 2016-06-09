@@ -1,0 +1,15 @@
+.root {
+  flex: 1;
+}
+
+.row + .row {
+  margin-top: 2em;
+}
+
+.label {
+  font-weight: bold;
+}
+
+.control {
+  margin-top: .5em;
+}
