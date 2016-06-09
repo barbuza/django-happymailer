@@ -9,7 +9,7 @@ from .utils import layout_classes, template_classes, get_template, get_layout
 
 
 class TemplateAdminForm(forms.ModelForm):
-    subject = forms.CharField(widget=forms.TextInput(attrs={'class': 'vLargeTextField'}))
+    subject = forms.CharField(widget=forms.Textarea(attrs={'class': 'vLargeTextField'}))
     layout = forms.ChoiceField(choices=[])
 
     def __init__(self, *args, **kwargs):
@@ -25,6 +25,7 @@ class FakedataForm(forms.Form):
     layout = forms.CharField()
     template = forms.CharField()
     body = forms.CharField()
+    subject = forms.CharField()
 
     def __init__(self, *args, **kwargs):
         super(FakedataForm, self).__init__(*args, **kwargs)
@@ -41,7 +42,10 @@ class TemplateAdmin(admin.ModelAdmin):
 
     def get_urls(self):
         info = self.model._meta.app_label, self.model._meta.model_name
-        extras = [url(r'^preview/$', self.preview, name='%s_%s_preview' % info)]
+        extras = [
+            url(r'^preview/$', self.preview, name='%s_%s_preview' % info),
+            url(r'^send_test/$', self.send_test, name='%s_%s_send_test' % info)
+        ]
         return extras + super(TemplateAdmin, self).get_urls()
 
     def preview(self, request):
@@ -57,6 +61,23 @@ class TemplateAdmin(admin.ModelAdmin):
         return JsonResponse({
             'html': tmpl.compile(),
             'variables': {name: repr(value) for name, value in tmpl.variables.items()}
+        })
+
+    def send_test(self, request):
+        form = FakedataForm(request.POST)
+        if not form.is_valid():
+            return HttpResponseBadRequest()
+        template_cls = get_template(form.cleaned_data['template'])
+        layout_cls = get_layout(form.cleaned_data['layout'])
+        kwargs = fake.generate(template_cls.kwargs)
+        recipient = '{} <{}>'.format(request.user.get_full_name(), request.user.email)
+        tmpl = template_cls(recipient, _force_layout_cls=layout_cls, **kwargs)
+        tmpl.body = form.cleaned_data['body']
+        tmpl.subject = form.cleaned_data['subject']
+        tmpl.send()
+
+        return JsonResponse({
+            'mail': request.user.email
         })
 
     def get_actions(self, request):

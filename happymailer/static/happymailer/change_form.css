@@ -64,10 +64,41 @@
 
 #preview_container > iframe {
     position: absolute;
-    left: 104.5px;
+    left: 57.5px;
     top: 430px;
-    width: 656px;
-    height: 1118px;
+    width: 1072px;
+    height: 1597px;
     background: #fff;
     border: none;
+    transform: scale(0.7);
+    transform-origin: 0 0;
+}
+
+#send_test_mail {
+    background: #eee;
+    padding: 0 12px;
+    display: inline-block;
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    height: 32px;
+    line-height: 32px;
+}
+
+#send_test_mail:hover {
+    background: #ddd;
+}
+
+#send_test_mail:active {
+    background: #ccc;
+}
+
+#send_test_preloader {
+    display: inline-block;
+    background: #fff url("preloader.gif") no-repeat center center;
+    background-size: contain;
+    width: 32px;
+    height: 32px;
 }

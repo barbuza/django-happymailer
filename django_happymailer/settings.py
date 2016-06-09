@@ -123,3 +123,6 @@ HAPPYMAILER_MJML_BIN = [
     '~/.nvm/versions/node/v5.9.1/bin/mjml'
 ]
 HAPPYMAILER_FROM = 'test@test.com'
+
+EMAIL_BACKEND = "sgbackend.SendGridBackend"
+SENDGRID_API_KEY = "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"

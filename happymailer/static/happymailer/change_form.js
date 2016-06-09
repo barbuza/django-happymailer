@@ -109,6 +109,8 @@ function completeIfInTag(cm) {
 
 django.jQuery(function($) {
   var body = document.getElementById('id_body');
+  var subject = document.getElementById('id_subject');
+
   var width = body.offsetWidth;
   var cm = CodeMirror.fromTextArea(body, {
     lineNumbers: true,
@@ -126,6 +128,19 @@ django.jQuery(function($) {
     theme: 'solarized'
   });
   cm.setSize(width, 'auto');
+
+  var cm2 = CodeMirror.fromTextArea(subject, {
+    lineNumbers: true,
+    mode: 'django:inner',
+    tabSize: 2,
+    theme: 'solarized'
+  });
+  cm2.setSize(width, 'auto');
+  cm2.on('beforeChange', function(instance, change) {
+    var newtext = change.text.join("").replace(/\n/g, ""); // remove ALL \n !
+    change.update(change.from, change.to, [newtext]);
+    return true;
+  });
 
   var previewBtn = $('#preview_btn');
 
@@ -148,17 +163,23 @@ django.jQuery(function($) {
     previewContainer.append(frame);
   }
 
-  function updatePreview() {
-    previewContainer.find('iframe').remove();
-    $.post(previewBtn.data('url'), {
+  function getFormData() {
+    return {
       layout: $('#id_layout').val(),
       template: previewBtn.data('template'),
-      body: cm.getValue()
-    }).then(function(response) {
-      setPreview(null, response);
-    }, function(err) {
-      setPreview(err);
-    });
+      body: cm.getValue(),
+      subject: cm2.getValue()
+    };
+  }
+
+  function updatePreview() {
+    previewContainer.find('iframe').remove();
+    $.post(previewBtn.data('url'), getFormData())
+      .then(function(response) {
+        setPreview(null, response);
+      }, function(err) {
+        setPreview(err);
+      });
   }
 
   previewBtn.click(function() {
@@ -167,4 +188,23 @@ django.jQuery(function($) {
   });
 
   updatePreview();
+
+  var sendBtn = $('#send_test_mail');
+  var sendPreloader = $('#send_test_preloader');
+
+  sendBtn.click(function() {
+    sendBtn.hide();
+    sendPreloader.show();
+    $.post(sendBtn.data('url'), getFormData())
+      .then(function(response) {
+        alert('test mail sent to ' + response.mail);
+        sendPreloader.hide();
+        sendBtn.show();
+      }, function() {
+        alert('fail');
+        sendPreloader.hide();
+        sendBtn.show();
+      });
+  });
+
 });

@@ -8,7 +8,7 @@ class BasicLayout(Layout):
 <mjml>
   <mj-head>
     <mj-attributes>
-      <mj-text padding-left="0" padding-right="0"/>
+      <mj-text/>
       <mj-divider border-width="1px" border-color="#ccc"/>
     </mj-attributes>
   </mj-head>

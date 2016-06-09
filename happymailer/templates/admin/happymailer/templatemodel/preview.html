@@ -1,5 +1,12 @@
 {% load admin_urls %}
 
+<div>
+  <div data-url="{% url opts|admin_urlname:'send_test' %}"
+       data-template="{{ original.name }}"
+       id="send_test_mail">send test</div>
+  <div id="send_test_preloader" style="display: none"></div>
+</div>
+
 {% if variables|length %}
   <h2>Variables:</h2>
   <table>
