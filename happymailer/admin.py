@@ -28,8 +28,8 @@ class TemplateAdminForm(forms.ModelForm):
 class FakedataForm(forms.Form):
     layout = forms.CharField()
     template = forms.CharField()
-    body = forms.CharField()
-    subject = forms.CharField()
+    body = forms.CharField(required=False)
+    subject = forms.CharField(required=False)
     variables = forms.CharField()
 
     def __init__(self, *args, **kwargs):
@@ -56,6 +56,7 @@ class TemplateAdmin(admin.ModelAdmin):
     def preview(self, request):
         form = FakedataForm(request.POST)
         if not form.is_valid():
+            print(form.errors)
             return HttpResponseBadRequest()
         variables = json.loads(form.cleaned_data['variables'])
         template_cls = get_template(form.cleaned_data['template'])
@@ -116,10 +117,10 @@ class TemplateAdmin(admin.ModelAdmin):
                 'staticUrl': settings.STATIC_URL + 'happymailer/',
                 'template': {
                     'template': model.name,
-                    'body': model.body,
-                    'layout': model.layout,
+                    'body': model.body or '',
+                    'layout': model.layout or layout_classes[0].name,
                     'enabled': model.enabled,
-                    'subject': model.subject
+                    'subject': model.subject or ''
                 },
                 'previewUrl': reverse('admin:happymailer_templatemodel_preview'),
                 'layouts': [{'value': cls.name, 'label': cls.description or cls.name}

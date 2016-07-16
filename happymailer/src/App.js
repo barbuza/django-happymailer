@@ -1,7 +1,6 @@
 import React, { Component, PropTypes } from 'react';
 import Link from 'valuelink';
 import Form from './Form';
-import Variables from './Variables';
 import Preview from './Preview';
 
 export default class App extends Component {
@@ -21,9 +20,10 @@ export default class App extends Component {
     const links = Link.state(this, 'template').pick('layout', 'enabled', 'subject', 'body');
     return (
       <div className={styles.root}>
-        <Form links={links}/>
-        <div className={styles.divider}/>
-        <Variables variables={this.state.variables}/>
+        <Form
+          links={links}
+          template={template.template}
+          variables={this.state.variables} />
         <div className={styles.divider}/>
         <Preview
           variables={this.state.variables}

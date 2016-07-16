@@ -1,0 +1,8 @@
+Django==1.9.7
+django-debug-toolbar==1.4
+fake-factory==0.5.9
+html2text==2016.5.29
+python-dateutil==2.5.3
+six==1.10.0
+sqlparse==0.1.19
+trafaret==0.7.1

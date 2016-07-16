@@ -5,6 +5,7 @@ import 'react-ios-switch/build/bundle.css';
 import Select from 'react-select';
 import 'react-select/dist/react-select.css';
 import Codemirror from './Codemirror';
+import Variables from './Variables';
 
 const Row = ({ label, children }) => (
   <div className={styles.row}>
@@ -27,11 +28,11 @@ export default class Form extends Component {
   };
 
   render() {
-    const { links } = this.props;
+    const { links, template } = this.props;
     return (
       <div className={styles.root}>
         <Row label='Name'>
-          <div>dummy</div>
+          <div>{template}</div>
         </Row>
         <Row label='Enabled'>
           <Switch
@@ -39,6 +40,7 @@ export default class Form extends Component {
             onChange={checked => links.enabled.set(checked)}
           />
         </Row>
+          
         <Row label='Layout'>
           <Select value={links.layout.value}
                   onChange={value => links.layout.set(value)}
@@ -46,12 +48,17 @@ export default class Form extends Component {
                   options={window.happymailerConfig.layouts}
           />
         </Row>
+        <Variables variables={this.props.variables}/>
         <Row label='Subject'>
           <Codemirror singleLine mode='django:inner' valueLink={links.subject}/>
         </Row>
         <Row label='Body'>
           <Codemirror mode='mjml' valueLink={links.body}/>
         </Row>
+
+        <div className='submit-row'>
+            <input type="button" className="default" value="Preview"/>
+        </div>
       </div>
     );
   }
