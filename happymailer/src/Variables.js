@@ -1,16 +1,26 @@
 import React from 'react';
 
-const Variable = ({ name, type, value }) => (
-  <tr>
-    <th>{name}</th>
-    <td>{type}</td>
-    <td>{value}</td>
-  </tr>
-);
+
+const VariableInput = ({valueLink}) => (
+  <input type='text'
+         value={valueLink.value}
+         onChange={e => valueLink.set(e.target.value)} />
+);  
+
+const VariableRow = ({ variableLink }) => {
+  const {name, type} = variableLink.value,
+        valueLink = variableLink.at('value');
+  return (
+      <tr>
+        <th>{name}</th>
+        <td>{type}</td>
+        <td><VariableInput valueLink={valueLink} /></td>
+      </tr>
+  );
+};
 
 const Variables = ({ variables }) => (
   <div className={styles.root}>
-    <div className={styles.title}>Variables:</div>
     <table className={styles.table}>
       <thead>
         <tr>
@@ -21,7 +31,7 @@ const Variables = ({ variables }) => (
       </thead>
       <tbody>
         {variables.map((variable, idx) =>
-          <Variable {...variable} key={idx}/>
+          <VariableRow variableLink={variable} key={idx}/>
         )}
       </tbody>
     </table>

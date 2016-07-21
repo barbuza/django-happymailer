@@ -83,15 +83,19 @@ class BasicsCase(TestCase):
             TestTemplate('spam', foo='bar', spam='eggs')
 
     def test_find_templates(self):
+
         with override_settings(INSTALLED_APPS=[]):
             self.assertListEqual(template_classes, [])
             self.assertListEqual(layout_classes, [])
+
         with override_settings(INSTALLED_APPS=['dummy']):
             self.assertListEqual(template_classes, [WelcomeTemplate])
             self.assertListEqual(layout_classes, [BasicLayout])
+
         with override_settings(INSTALLED_APPS=['dummy2']):
             self.assertListEqual(template_classes, [DummyTemplate])
             self.assertListEqual(layout_classes, [])
+
         with override_settings(INSTALLED_APPS=['dummy', 'dummy2']):
             self.assertSetEqual(set(template_classes), {WelcomeTemplate, DummyTemplate})
             self.assertSetEqual(set(layout_classes), {BasicLayout})
@@ -299,6 +303,9 @@ class RenderCase(TestCase):
         self.assertEqual(tmpl.render(), 'testtesttest')
 
 
+@override_settings(
+    EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend'
+)
 class CompileCase(TestCase):
     def setUp(self):
         class TestLayout(Layout):
@@ -331,7 +338,7 @@ class CompileCase(TestCase):
         self.assertIn('foo bar spam eggs', self.tmpl.compile())
 
     def test_send_and_plaintext(self):
-        self.tmpl.send()
+        self.tmpl.send(force=True)
         self.assertEqual(mail.outbox[0].subject, 'hello, world!')
         self.assertIn('foo bar spam eggs', mail.outbox[0].body)
         self.assertIn('https://github.com/', mail.outbox[0].body)

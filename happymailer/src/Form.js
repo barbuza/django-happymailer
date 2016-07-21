@@ -26,9 +26,13 @@ export default class Form extends Component {
       body: PropTypes.instanceOf(Link).isRequired
     }).isRequired
   };
-
+    
   render() {
-    const { links, template } = this.props;
+    const { links, template, refreshFn, saveFn, sendFn, variables } = this.props;
+
+    links.subject.check(x => x);
+    links.body.check(x => x);
+
     return (
       <div className={styles.root}>
         <Row label='Name'>
@@ -43,21 +47,35 @@ export default class Form extends Component {
           
         <Row label='Layout'>
           <Select value={links.layout.value}
-                  onChange={value => links.layout.set(value)}
+                  onChange={value => links.layout.set(value.value)}
                   clearable={false}
                   options={window.happymailerConfig.layouts}
           />
         </Row>
-        <Variables variables={this.props.variables}/>
+
+        <Row label='Variables'>
+          <Variables variables={variables}/>
+        </Row>
+
         <Row label='Subject'>
           <Codemirror singleLine mode='django:inner' valueLink={links.subject}/>
         </Row>
+
         <Row label='Body'>
           <Codemirror mode='mjml' valueLink={links.body}/>
         </Row>
 
         <div className='submit-row'>
-            <input type="button" className="default" value="Preview"/>
+            <input type="submit" className="default" value="Save"
+                   onClick={saveFn}
+                   disabled={ links.subject.error || links.body.error } />
+            <input type="button" value="Save and continue editing"
+                   onClick={() => saveFn(false) }
+                   disabled={ links.subject.error || links.body.error } />
+            <p className='deletelink-box'>
+                <input type="button" value="Preview" onClick={refreshFn} />
+                <input type="button" value="Send Test" onClick={sendFn} />
+            </p>
         </div>
       </div>
     );

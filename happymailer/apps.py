@@ -1,4 +1,6 @@
 from django.apps import AppConfig
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 
 __all__ = ('HappyMailerConfig',)
 

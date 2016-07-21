@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'debug_toolbar',
+    'import_export',
     'happymailer.apps.HappymailerConfig',
     'dummy',
     'dummy2'
@@ -123,7 +124,7 @@ HAPPYMAILER_MJML_BIN = [
     '~/.nvm/versions/node/v6.0.0/bin/node',
     '~/.nvm/versions/node/v6.0.0/bin/mjml'
 ]
-HAPPYMAILER_FROM = 'test@test.com'
+HAPPYMAILER_FROM = 'test@example.com'
 
-# EMAIL_BACKEND = "sgbackend.SendGridBackend"
-# SENDGRID_API_KEY = "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"
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

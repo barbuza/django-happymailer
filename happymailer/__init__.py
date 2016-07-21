@@ -58,6 +58,10 @@ class TemplateMeta(BasicMeta):
     registry = all_template_classes
 
 
+class MessageMeta(BasicMeta):
+    pass
+
+
 class Layout(six.with_metaclass(LayoutMeta)):
     name = None
     description = None
@@ -91,20 +95,25 @@ class Template(six.with_metaclass(TemplateMeta)):
     kwargs = {}
     abstract = True
 
-    def __init__(self, recipient, _force_layout_cls=None, _force_variables=None, **kwargs):
+    def __init__(self, recipient, force_layout_cls=None, force_variables=None, **kwargs):
         assert not self.abstract
+
         self.recipient = recipient
-        if _force_layout_cls:
-            self.layout_cls = _force_layout_cls
+
+        if force_layout_cls:
+            self.layout_cls = force_layout_cls
         else:
             self.layout_cls = None
             if self.layout:
                 self.layout_cls = get_layout(self.layout)
+
         if not self.layout_cls:
             raise TemplateConfigurationError('no layout specified for {} template'.format(self.name))
+
         self.kwargs = self.kwargs.check_and_return(kwargs)
-        if _force_variables:
-            self.variables = _force_variables
+
+        if force_variables:
+            self.variables = force_variables
         else:
             self.variables = self.variables.check_and_return(self.get_variables())
 
@@ -150,7 +159,9 @@ class Template(six.with_metaclass(TemplateMeta)):
         backend = backend_cls()
         return backend.compile(self.render())
 
-    def send(self):
+    def send(self, force=False):
+        if not self.enabled and not force:
+            return
         subject = six.text_type(DjangoTemplate(self.subject).render(Context(self.variables)))
         html = self.compile()
         text = html2text.html2text(html)
@@ -165,3 +176,20 @@ class Template(six.with_metaclass(TemplateMeta)):
             assert cls.name
             assert cls.variables
             assert cls.kwargs
+
+
+class Message(six.with_metaclass(MessageMeta)):
+    kwargs = {}
+    abstract = True
+
+    def __init__(self, **kwargs):
+        assert not self.abstract
+        self.kwargs = self.kwargs.check_and_return(kwargs)
+
+    def get_template(self, template_cls):
+        raise NotImplemented()
+
+    def template(self, template_cls):
+        return self.get_template(template_cls)
+
+

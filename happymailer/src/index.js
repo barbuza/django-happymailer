@@ -5,6 +5,6 @@ import './staticUrl';
 import App from './App';
 
 render(
-  <App previewUrl={window.happymailerConfig.previewUrl}/>,
+  <App { ...window.happymailerConfig }/>,
   document.getElementById('react-app')
 );
