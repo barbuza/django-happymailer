@@ -1,0 +1,18 @@
+language: python
+python:
+- "3.4"
+- "3.5"
+
+env:
+- TRAVIS_NODE_VERSION="5.0.0"
+- TRAVIS_NODE_VERSION="6.0.0"
+
+install:
+- rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && (cd ~/.nvm && git checkout `git describe --abbrev=0 --tags`) && source ~/.nvm/nvm.sh && nvm install $TRAVIS_NODE_VERSION
+- npm install -g mjml
+- pip install tox-travis
+
+script: tox
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

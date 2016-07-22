@@ -16,5 +16,6 @@ setup(
         'fake-factory == 0.5',
         'html2text == 2016.5.29',
         'trafaret >= 0.7',
+        'six',
     ]
 )

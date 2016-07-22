@@ -14,7 +14,7 @@ if [[ $TMUX ]]; then
     tmux bind q kill-session
 
     run 0 "./manage.py runserver 127.0.0.1:8001"
-    run 1 "npm start"
+    run 1 "nvm use 6.0.0 && npm start"
 else
   tmux new-session $0
 fi
