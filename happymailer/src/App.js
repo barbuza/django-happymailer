@@ -66,7 +66,7 @@ export default class App extends Component {
       const result = await this.makeRequest(sendtestUrl, body);
 
       console.log('send result:', result);
-      this.showNotify('Sended to', result.mail);
+      this.showNotify('Test Email', 'Sended to ' + result.mail);
   }
     
   async save(redirect=true) {
