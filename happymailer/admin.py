@@ -12,7 +12,7 @@ from .backends.base import CompileError
 from .models import TemplateModel
 from .utils import layout_classes, template_classes, get_template, get_layout
 from .mixins import TemplateImportExportMixin
-
+import trafaret
 
 class TemplateAdminForm(forms.ModelForm):
     subject = forms.CharField(widget=forms.Textarea(attrs={'class': 'vLargeTextField'}))
@@ -42,7 +42,7 @@ class FakedataForm(forms.Form):
 
 @admin.register(TemplateModel)
 class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
-    list_display = ('name', 'enabled', 'version',)
+    list_display = ('name', 'enabled', 'version', 'subject', 'updated_at')
     readonly_fields = ('name',)
     form = TemplateAdminForm
     fields = ('name', 'enabled', 'layout', 'subject', 'body',)
@@ -66,7 +66,7 @@ class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
         layout_cls = get_layout(form.cleaned_data['layout'])
         kwargs = fake.generate(template_cls.kwargs)
 
-        tmpl = template_cls('spam', force_layout_cls=layout_cls, force_variables=variables, **kwargs)
+        tmpl = template_cls('spam', _force_layout_cls=layout_cls, _force_variables=variables, **kwargs)
         tmpl.body = form.cleaned_data['body']
 
         try:
@@ -90,7 +90,7 @@ class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
         kwargs = fake.generate(template_cls.kwargs)
 
         recipient = '{} <{}>'.format(request.user.get_full_name(), request.user.email)
-        tmpl = template_cls(recipient, force_layout_cls=layout_cls, force_variables=variables, **kwargs)
+        tmpl = template_cls(recipient, _force_layout_cls=layout_cls, _force_variables=variables, **kwargs)
         tmpl.body = form.cleaned_data['body']
         tmpl.subject = "Test: {}".format(form.cleaned_data['subject'])
         tmpl.send(force=True)
@@ -132,6 +132,22 @@ class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
 
             variables = template.fake_variables()
 
+            def render_key(x, variables=None):
+                if variables is None:
+                    variables = {}
+
+                if isinstance(x.trafaret, trafaret.Dict):
+                    value = [ render_key(k, variables.get(x.name)) for k in x.trafaret.keys]
+                else:
+                    value = variables.get(x.name, fake.generate(x.trafaret))
+
+                return {
+                    'name': x.name,
+                    'type': repr(x.trafaret),
+                    'value': value,
+                    'valueType': x.trafaret.__class__.__name__.lower()
+                }
+
             extra_context = dict(
                 extra_context or {},
                 happymailer_config=json.dumps({
@@ -149,10 +165,7 @@ class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
                     'sendtestUrl': reverse('admin:happymailer_templatemodel_send_test'),
                     'layouts': [{'value': cls.name, 'label': cls.description or cls.name}
                                 for cls in layout_classes],
-                    'variables': [{'name': x.name,
-                                   'type': repr(x.trafaret),
-                                   'value': variables.get(x.name, fake.generate(x.trafaret))}
-                                  for x in template.variables.keys]
+                    'variables': [render_key(x, variables) for x in template.variables.keys],
                 }).replace('<', '\\u003C'),
             )
 

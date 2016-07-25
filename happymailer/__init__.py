@@ -95,13 +95,15 @@ class Template(six.with_metaclass(TemplateMeta)):
     kwargs = {}
     abstract = True
 
-    def __init__(self, recipient, force_layout_cls=None, force_variables=None, **kwargs):
+    def __init__(self, recipient=None, _force_layout_cls=None, _force_variables=None, **kwargs):
         assert not self.abstract
 
-        self.recipient = recipient
+        self._recipients = []
+        if recipient:
+            self._recipients.append(recipient)
 
-        if force_layout_cls:
-            self.layout_cls = force_layout_cls
+        if _force_layout_cls:
+            self.layout_cls = _force_layout_cls
         else:
             self.layout_cls = None
             if self.layout:
@@ -112,10 +114,16 @@ class Template(six.with_metaclass(TemplateMeta)):
 
         self.kwargs = self.kwargs.check_and_return(kwargs)
 
-        if force_variables:
-            self.variables = force_variables
+        if _force_variables:
+            self.variables = _force_variables
         else:
             self.variables = self.variables.check_and_return(self.get_variables())
+
+    def add_recipient(self, recipient):
+        self._recipients.append(recipient)
+
+    def recipients(self):
+        return [self._recipient]
 
     @classmethod
     def fake_variables(cls):
@@ -159,13 +167,15 @@ class Template(six.with_metaclass(TemplateMeta)):
         backend = backend_cls()
         return backend.compile(self.render())
 
+
+
     def send(self, force=False):
         if not self.enabled and not force:
             return
         subject = six.text_type(DjangoTemplate(self.subject).render(Context(self.variables)))
         html = self.compile()
         text = html2text.html2text(html)
-        send_mail(subject, text, settings.HAPPYMAILER_FROM, recipient_list=[self.recipient],
+        send_mail(subject, text, settings.HAPPYMAILER_FROM, recipient_list=self.recipients(),
                   html_message=html, fail_silently=False)
 
     @classmethod

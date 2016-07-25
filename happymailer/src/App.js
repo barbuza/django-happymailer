@@ -6,6 +6,13 @@ import Notify from './Notify';
 import cookie from 'cookie';
 import qs from 'qs';
 
+function reduce_vars(items) {
+    return items.reduce((prev, item) => {
+        const value = (item.valueType == 'dict') ? reduce_vars(item.value) : item.value;
+        return {...prev, [item.name]: value};
+    }, {});
+}
+
 export default class App extends Component {
 
   static propTypes = {
@@ -46,7 +53,8 @@ export default class App extends Component {
       const { template } = this.state;
       const { previewUrl } = this.props;
       let { variables } = this.state;
-      variables = variables.reduce((res, item) => ({ ...res, [item.name]: item.value }), {});
+      variables = reduce_vars(variables);
+      // variables = variables.reduce((res, item) => ({ ...res, [item.name]: item.value }), {});
       const body = qs.stringify({ ...template, variables: JSON.stringify(variables)});
       const result = await this.makeRequest(previewUrl, body);
 
@@ -58,10 +66,11 @@ export default class App extends Component {
     
   async sendTest() {
       console.log('send test');
-      const { template } = this.state;
+      const { template, variables } = this.state;
       const { sendtestUrl } = this.props;
-      let { variables } = this.state;
-      variables = variables.reduce((res, item) => ({ ...res, [item.name]: item.value }), {});
+      // let { variables } = this.state;
+      // variables = reduce_vars(variables);
+      // variables = variables.reduce((res, item) => ({ ...res, [item.name]: item.value }), {});
       const body = qs.stringify({ ...template, variables: JSON.stringify(variables)});
       const result = await this.makeRequest(sendtestUrl, body);
 
@@ -89,7 +98,6 @@ export default class App extends Component {
   render() {
     const { variables, template, previewHtml, iframeKey } = this.state;
     const links = Link.state(this, 'template').pick('layout', 'enabled', 'subject', 'body');
-    const variableLinks = Link.state(this, 'variables');
       
     return (
       <div className={styles.root}>
@@ -99,7 +107,7 @@ export default class App extends Component {
           refreshFn={::this.refreshPreview}
           links={links}
           template={template.template}
-          variables={variableLinks}
+          variables={variables}
         />
         <div className={styles.divider} />
         <Preview key={iframeKey} html={previewHtml} />
