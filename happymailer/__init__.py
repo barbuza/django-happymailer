@@ -21,6 +21,13 @@ class BasicMeta(type):
         dct.setdefault('abstract', False)
         abstract = dct['abstract']
 
+        base_variables = t.Dict({})
+
+        for klass in bases:
+            variables = getattr(klass, 'variables', None)
+            if variables:
+                base_variables = base_variables.merge(variables)
+
         if 'kwargs' in dct:
             kwargs = dct.pop('kwargs')
             if not abstract or kwargs is not None:
@@ -35,7 +42,7 @@ class BasicMeta(type):
             variables = dct.pop('variables')
             if not abstract or variables is not None:
                 assert isinstance(variables, dict)
-                variables = t.Dict(**variables)
+                variables = base_variables.merge(variables)
                 if mcs.ignore_extra:
                     variables = variables.ignore_extra('*')
 
@@ -67,12 +74,10 @@ class Layout(six.with_metaclass(LayoutMeta)):
     description = None
     abstract = True
     variables = {}
-    kwargs = {}
     content = None
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         assert not self.abstract
-        self.kwargs = self.kwargs.check_and_return(kwargs)
         self.variables = self.variables.check_and_return(self.get_variables())
 
     def get_variables(self):
@@ -118,12 +123,16 @@ class Template(six.with_metaclass(TemplateMeta)):
             self.variables = _force_variables
         else:
             self.variables = self.variables.check_and_return(self.get_variables())
+            self.post_init()
+
+    def post_init(self):
+        pass
 
     def add_recipient(self, recipient):
         self._recipients.append(recipient)
 
     def recipients(self):
-        return [self._recipient]
+        return self._recipients
 
     @classmethod
     def fake_variables(cls):
@@ -158,7 +167,7 @@ class Template(six.with_metaclass(TemplateMeta)):
         return {}
 
     def render(self):
-        layout = self.layout_cls(**self.kwargs)
+        layout = self.layout_cls()
         body = DjangoTemplate(self.body).render(Context(self.variables))
         return six.text_type(DjangoTemplate(layout.content).render(Context(dict(layout.variables, body=body))))
 
@@ -166,8 +175,6 @@ class Template(six.with_metaclass(TemplateMeta)):
         backend_cls = import_string(settings.HAPPYMAILER_BACKEND)
         backend = backend_cls()
         return backend.compile(self.render())
-
-
 
     def send(self, force=False):
         if not self.enabled and not force:
@@ -186,20 +193,3 @@ class Template(six.with_metaclass(TemplateMeta)):
             assert cls.name
             assert cls.variables
             assert cls.kwargs
-
-
-class Message(six.with_metaclass(MessageMeta)):
-    kwargs = {}
-    abstract = True
-
-    def __init__(self, **kwargs):
-        assert not self.abstract
-        self.kwargs = self.kwargs.check_and_return(kwargs)
-
-    def get_template(self, template_cls):
-        raise NotImplemented()
-
-    def template(self, template_cls):
-        return self.get_template(template_cls)
-
-

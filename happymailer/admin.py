@@ -1,18 +1,20 @@
 import json
 
+import trafaret
 from django import forms
 from django.conf import settings
 from django.conf.urls import url
 from django.contrib import admin
 from django.core.urlresolvers import reverse
 from django.http import Http404, JsonResponse, HttpResponseBadRequest
+from django.contrib.admin.utils import unquote
 
 from . import fake
 from .backends.base import CompileError
-from .models import TemplateModel
-from .utils import layout_classes, template_classes, get_template, get_layout
 from .mixins import TemplateImportExportMixin
-import trafaret
+from .models import TemplateModel, HistoricalTemplate
+from .utils import layout_classes, template_classes, get_template, get_layout
+
 
 class TemplateAdminForm(forms.ModelForm):
     subject = forms.CharField(widget=forms.Textarea(attrs={'class': 'vLargeTextField'}))
@@ -48,14 +50,45 @@ class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
     fields = ('name', 'enabled', 'layout', 'subject', 'body',)
 
     def get_urls(self):
-        info = self.model._meta.app_label, self.model._meta.model_name
+        urls = super(TemplateAdmin, self).get_urls()
+        opts = self.model._meta
+        info = opts.app_label, opts.model_name
+        admin_view = self.admin_site.admin_view
         extras = [
-            url(r'^preview/$', self.admin_site.admin_view(self.preview), name='%s_%s_preview' % info),
-            url(r'^send_test/$', self.admin_site.admin_view(self.send_test), name='%s_%s_send_test' % info),
+            url(r'^preview/$', admin_view(self.preview_view), name='%s_%s_preview' % info),
+            url(r'^send_test/$', admin_view(self.send_test_view), name='%s_%s_send_test' % info),
+            url(r'^([^/]+)/version/([^/]+)/$', admin_view(self.history_view), name='%s_%s_version' % info),
+            url(r'^export/$', admin_view(self.export_action_view), name='%s_%s_export' % info),
+            url(r'^import/$', admin_view(self.import_action_view), name='%s_%s_import' % info),
         ]
-        return extras + super(TemplateAdmin, self).get_urls()
+        return extras + urls
 
-    def preview(self, request):
+    def export_action_view(self, request):
+        pass
+
+    def import_action_view(self, request):
+        pass
+
+    def history_view(self, request, object_id, version):
+        try:
+            obj = HistoricalTemplate.objects.get(
+                template=object_id,
+                version=version,
+            )
+        except HistoricalTemplate.DoesNotExist:
+            return Http404()
+
+        return JsonResponse({
+            'data': {
+                'version': obj.version,
+                'layout': obj.layout,
+                'subject': obj.subject,
+                'body': obj.body or '',
+            }
+        })
+
+
+    def preview_view(self, request):
         form = FakedataForm(request.POST)
         if not form.is_valid():
             print(form.errors)
@@ -78,7 +111,7 @@ class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
             'html': compiled,
         })
 
-    def send_test(self, request):
+    def send_test_view(self, request):
         form = FakedataForm(request.POST)
         if not form.is_valid():
             print('errors:', form.errors)
@@ -148,17 +181,26 @@ class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
                     'valueType': x.trafaret.__class__.__name__.lower()
                 }
 
+
+            history_options = [{
+                'value': v.version,
+                'label': '{version} (from {archived_at})'.format(
+                    version=v.version, archived_at=v.archived_at.strftime('%Y-%m-%d %H:%M:%S'))}
+                for v in obj.history.order_by('-version').all()]
+
             extra_context = dict(
                 extra_context or {},
                 happymailer_config=json.dumps({
                     'staticUrl': settings.STATIC_URL + 'happymailer/',
                     'template': {
+                        'pk': obj.pk,
                         'template': obj.name,
                         'body': obj.body or '',
                         'layout': obj.layout or layout_classes[0].name,
                         'enabled': obj.enabled,
                         'subject': obj.subject or '',
                     },
+                    'history': history_options,
                     'changelistUrl': reverse('admin:happymailer_templatemodel_changelist'),
                     'changeUrl': reverse('admin:happymailer_templatemodel_change', args=[obj.pk]),
                     'previewUrl': reverse('admin:happymailer_templatemodel_preview'),

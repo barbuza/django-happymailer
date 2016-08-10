@@ -44,7 +44,6 @@ export default class App extends Component {
           }
       });
       const result = await response.json();
-      // console.log(result);
       return result;
   }
 
@@ -54,7 +53,6 @@ export default class App extends Component {
       const { previewUrl } = this.props;
       let { variables } = this.state;
       variables = reduce_vars(variables);
-      // variables = variables.reduce((res, item) => ({ ...res, [item.name]: item.value }), {});
       const body = qs.stringify({ ...template, variables: JSON.stringify(variables)});
       const result = await this.makeRequest(previewUrl, body);
 
@@ -66,11 +64,10 @@ export default class App extends Component {
     
   async sendTest() {
       console.log('send test');
-      const { template, variables } = this.state;
+      const { template } = this.state;
       const { sendtestUrl } = this.props;
-      // let { variables } = this.state;
-      // variables = reduce_vars(variables);
-      // variables = variables.reduce((res, item) => ({ ...res, [item.name]: item.value }), {});
+      let { variables } = this.state;
+      variables = reduce_vars(variables);
       const body = qs.stringify({ ...template, variables: JSON.stringify(variables)});
       const result = await this.makeRequest(sendtestUrl, body);
 
@@ -87,9 +84,19 @@ export default class App extends Component {
       if (redirect) {
           window.location = changelistUrl;
       } else {
-          this.showNotify('Template saved');
+          // this.showNotify('Template saved');
+          window.location = changeUrl;
       } 
   }  
+
+  async loadVersion(versionId) {
+    const { changelistUrl } = this.props;
+    const { template } = this.state;
+    const url = changelistUrl + `${template.pk}/version/${versionId}/`;
+    const result = await this.makeRequest(url, null);
+    console.log('version data:', result);
+    return result;
+  }
 
   showNotify(title, msg) {
       this.refs.notificator.success(title, msg, 3000);
@@ -98,14 +105,19 @@ export default class App extends Component {
   render() {
     const { variables, template, previewHtml, iframeKey } = this.state;
     const links = Link.state(this, 'template').pick('layout', 'enabled', 'subject', 'body');
-      
+
+    const actions = {
+      save: ::this.save,
+      sendTest: ::this.sendTest,
+      refresh: ::this.refreshPreview,
+      loadVersion: ::this.loadVersion
+    };
+
     return (
       <div className={styles.root}>
         <Form
-          saveFn={::this.save}
-          sendFn={::this.sendTest}
-          refreshFn={::this.refreshPreview}
-          links={links}
+          actions={actions}
+s         links={links}
           template={template.template}
           variables={variables}
         />

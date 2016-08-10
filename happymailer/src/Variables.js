@@ -1,12 +1,5 @@
 import React from 'react';
 
-
-// const VariableInput = ({valueLink}) => (
-//   <input type='text'
-//          value={valueLink.value}
-//          onChange={e => valueLink.set(e.target.value)} />
-// );
-
 const ListVariable = ({ values }) => (
     <ul>
         {values.map((val, idx) =>
@@ -56,7 +49,7 @@ function flatten(array) {
 
 const Variables = ({ variables }) => {
     const rows = flatten(variables);
-    // console.log('rows:', rows, variables);
+
     return (
         <div className={styles.root}>
             <table className={styles.table}>
