@@ -28,7 +28,7 @@ export default class Form extends Component {
   };
 
   state = {
-    version: window.happymailerConfig.history[0]['value'],
+    version: window.happymailerConfig.history.length ? window.happymailerConfig.history[0]['value'] : null,
   }
 
   async setVersion(versionId) {
