@@ -4,10 +4,13 @@ import trafaret
 from django import forms
 from django.conf import settings
 from django.conf.urls import url
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.core.urlresolvers import reverse
-from django.http import Http404, JsonResponse, HttpResponseBadRequest
+from django.http import Http404, JsonResponse, HttpResponseBadRequest, HttpResponse, HttpResponseRedirect
 from django.contrib.admin.utils import unquote
+from django.core.serializers.json import DjangoJSONEncoder
+from django.template.response import TemplateResponse
+from django.db import transaction
 
 from . import fake
 from .backends.base import CompileError
@@ -42,32 +45,111 @@ class FakedataForm(forms.Form):
         self.fields['template'].choices = [(cls.name, cls.name) for cls in template_classes]
 
 
+class ImportForm(forms.Form):
+    import_file = forms.FileField()
+
+
 @admin.register(TemplateModel)
 class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
-    list_display = ('name', 'enabled', 'version', 'subject', 'updated_at')
+    list_display = ('name', 'enabled', 'has_errors', 'version', 'subject', 'updated_at')
     readonly_fields = ('name',)
     form = TemplateAdminForm
-    fields = ('name', 'enabled', 'layout', 'subject', 'body',)
+    fields = ('name', 'enabled', 'has_errors', 'layout', 'subject', 'body',)
+
+    import_template_name = 'admin/happymailer/templatemodel/import.html'
+
+    def get_model_info(self):
+        opts = self.model._meta
+        return (opts.app_label, opts.model_name,)
 
     def get_urls(self):
         urls = super(TemplateAdmin, self).get_urls()
-        opts = self.model._meta
-        info = opts.app_label, opts.model_name
         admin_view = self.admin_site.admin_view
+        info = self.get_model_info()
         extras = [
             url(r'^preview/$', admin_view(self.preview_view), name='%s_%s_preview' % info),
             url(r'^send_test/$', admin_view(self.send_test_view), name='%s_%s_send_test' % info),
             url(r'^([^/]+)/version/([^/]+)/$', admin_view(self.history_view), name='%s_%s_version' % info),
-            url(r'^export/$', admin_view(self.export_action_view), name='%s_%s_export' % info),
-            url(r'^import/$', admin_view(self.import_action_view), name='%s_%s_import' % info),
+            url(r'^export/$', admin_view(self.export_action), name='%s_%s_export' % info),
+            url(r'^import/$', admin_view(self.import_action), name='%s_%s_import' % info),
         ]
         return extras + urls
 
-    def export_action_view(self, request):
-        pass
+    def export_action(self, request):
+        response = HttpResponse(content_type='application/json')
+        response['Content-Disposition'] = 'attachment; filename=templatemodel_export.json'
 
-    def import_action_view(self, request):
-        pass
+        items = [{
+            'name': t.name,
+            'layout': t.layout,
+            'subject': t.subject,
+            'body': t.body,
+            'version': t.version,
+            'enabled': t.enabled,
+            'has_errors': t.has_errors,
+            'created_at': t.created_at,
+            'updated_at': t.updated_at,
+            'history': [{
+                'layout': h.layout,
+                'subject': h.subject,
+                'body': h.body,
+                'version': h.version,
+                'archived_at': h.archived_at,
+            } for h in t.history.all()]
+        } for t in TemplateModel.objects.all()]
+
+        json.dump(items, response, cls=DjangoJSONEncoder, indent=2, sort_keys=True)
+        return response
+
+    def import_action(self, request):
+        context = {}
+        form = ImportForm(request.POST or None, request.FILES or None)
+
+        if request.POST and form.is_valid():
+            import_file = form.cleaned_data['import_file']
+            data = json.loads(import_file.read().decode('utf-8'))
+
+            created_cnt = 0
+            updated_cnt = 0
+            with transaction.atomic():
+                for item in data:
+                    item_defaults = dict(**item)
+                    del item_defaults['history']
+
+                    template, created = TemplateModel.objects.get_or_create(
+                        name=item['name'],
+                        defaults=item_defaults)
+
+                    if created:
+                        created_cnt += 1
+                        for h in item['history']:
+                            template.history.create(**h)
+
+                    else:
+                        if item['version'] > template.version:
+                            # to avoid post_save signal
+                            TemplateModel.objects.filter(pk=template.pk).update(**item_defaults)
+                            updated_cnt += 1
+
+                            for h in item['history']:
+                                if h['version'] > template.version:
+                                    new_h = template.history.create(**h)
+                                    new_h.archived_at = h['archived_at']
+                                    new_h.save()
+
+            messages.info(request, '%d templates added, %d templates updated' % (created_cnt, updated_cnt))
+
+            url = reverse('admin:%s_%s_changelist' % self.get_model_info(),
+                          current_app=self.admin_site.name)
+            return HttpResponseRedirect(url)
+
+        context.update(self.admin_site.each_context(request))
+
+        context['form'] = form
+        context['opts'] = self.model._meta
+
+        request.current_app = self.admin_site.name
+        return TemplateResponse(request, [self.import_template_name], context)
 
     def history_view(self, request, object_id, version):
         try:
@@ -86,7 +168,6 @@ class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
                 'body': obj.body or '',
             }
         })
-
 
     def preview_view(self, request):
         form = FakedataForm(request.POST)
