@@ -177,6 +177,7 @@ class Template(six.with_metaclass(TemplateMeta)):
         dj_tmpl = DjangoTemplate(self.body)
         dj_tmpl.engine.string_if_invalid = InvalidVariableException()
         body = dj_tmpl.render(Context(self.variables))
+        dj_tmpl.engine.string_if_invalid = ''
         return six.text_type(DjangoTemplate(layout.content).render(Context(dict(layout.variables, body=body))))
 
     def compile(self):

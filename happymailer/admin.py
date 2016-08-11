@@ -51,12 +51,24 @@ class ImportForm(forms.Form):
     import_file = forms.FileField()
 
 
-def render_key(x, variables=None):
+def render_python_key(x, variables=None):
     if variables is None:
         variables = {}
 
     if isinstance(x.trafaret, trafaret.Dict):
-        value = [render_key(k, variables.get(x.name)) for k in x.trafaret.keys]
+        value = {k.name: render_python_key(k, variables.get(x.name)) for k in x.trafaret.keys}
+    else:
+        value = variables.get(x.name, fake.generate(x.trafaret))
+
+    return value
+
+
+def render_react_key(x, variables=None):
+    if variables is None:
+        variables = {}
+
+    if isinstance(x.trafaret, trafaret.Dict):
+        value = [render_react_key(k, variables.get(x.name)) for k in x.trafaret.keys]
     else:
         value = variables.get(x.name, fake.generate(x.trafaret))
 
@@ -151,7 +163,7 @@ class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
                     template_cls = get_template(template.name)
                     kwargs = fake.generate(template_cls.kwargs)
                     variables = template_cls.fake_variables()
-                    variables = [render_key(x, variables) for x in template.variables.keys]
+                    variables = {x.name: render_python_key(x, variables) for x in template_cls.variables.keys}
                     instance = template_cls(None, _force_variables=variables, **kwargs)
 
                     try:
@@ -284,7 +296,7 @@ class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
                     'previewUrl': reverse('admin:happymailer_templatemodel_preview'),
                     'layouts': [{'value': cls.name, 'label': cls.description or cls.name}
                                 for cls in layout_classes],
-                    'variables': [render_key(x, variables) for x in template.variables.keys],
+                    'variables': [render_react_key(x, variables) for x in template.variables.keys],
                 }).replace('<', '\\u003C'),
             )
 
