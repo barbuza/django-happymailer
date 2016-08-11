@@ -13,6 +13,36 @@ function reduce_vars(items) {
     }, {});
 }
 
+async function request(method, url, data = null) {
+  console.log(`method ${method} ${url}`);
+  const csrfToken = cookie.parse(document.cookie).csrftoken;
+  let options = {
+    method,
+    credentials: 'same-origin',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': csrfToken
+    }
+  };
+
+  if (data) {
+    options.body = qs.stringify(data);
+  }
+
+  const response = await fetch(url, options);
+
+  if (response.status < 200 || response.status >= 300) {
+    const error = new Error(response.statusText || `error ${response.status}`);
+    error.response = await response.json();
+    throw error;
+  }
+
+  const result = await response.json();
+  return result;
+}
+
+
 export default class App extends Component {
 
   static propTypes = {
@@ -25,77 +55,82 @@ export default class App extends Component {
     template: { ...this.props.template },
     variables: [...this.props.variables],
     previewHtml: '',
-    iframeKey: 0
+    iframeKey: 0,
+    errors: {},
   };
 
   componentDidMount() {
-      this.refreshPreview();
+      this.preview();
   }
 
-  async makeRequest(url, body) {
-      const csrftoken = cookie.parse(document.cookie).csrftoken;
-      const response = await fetch(url, {
-          method: 'POST',
-          body: body,
-          credentials: 'same-origin',
-          headers: {
-            'X-CSRFToken': csrftoken,
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
-      });
-      const result = await response.json();
-      return result;
+  setError(errors) {
+    this.setState({
+      errors
+    });
   }
 
-  async refreshPreview() {
-      console.log("preview refresh");
+  async preview(sendTest=false) {
+      console.log("preview: ", sendTest);
       const { template } = this.state;
       const { previewUrl } = this.props;
       let { variables } = this.state;
       variables = reduce_vars(variables);
-      const body = qs.stringify({ ...template, variables: JSON.stringify(variables)});
-      const result = await this.makeRequest(previewUrl, body);
 
-      this.setState({
+      try {
+        const result = await request('post', previewUrl, {
+          ...template,
+          variables: JSON.stringify(variables),
+          send_test: sendTest
+        });
+
+        this.setState({
           previewHtml: result.html,
-          iframeKey: this.state.iframeKey + 1
-      });
-  }
-    
-  async sendTest() {
-      console.log('send test');
-      const { template } = this.state;
-      const { sendtestUrl } = this.props;
-      let { variables } = this.state;
-      variables = reduce_vars(variables);
-      const body = qs.stringify({ ...template, variables: JSON.stringify(variables)});
-      const result = await this.makeRequest(sendtestUrl, body);
+          iframeKey: this.state.iframeKey + 1,
+          errors: {}
+        });
 
-      console.log('send result:', result);
-      this.showNotify('Test Email', 'Sended to ' + result.mail);
+        if (sendTest) {
+          this.showNotify('Test email', 'Sent to ' + result.email);
+        }
+
+      } catch(err) {
+        this.setError(err.response);
+      }
   }
-    
+
   async save(redirect=true) {
       const { changeUrl, changelistUrl } = this.props;
       const { template } = this.state;
-      const body = qs.stringify({ ...template });
-      const result = await this.makeRequest(changeUrl, body);
 
-      if (redirect) {
+      try {
+        const result = await request('post', changeUrl, {
+          ...template
+        });
+
+        if (redirect) {
           window.location = changelistUrl;
-      } else {
-          // this.showNotify('Template saved');
+        } else {
           window.location = changeUrl;
-      } 
-  }  
+        }
+
+      } catch(err) {
+        this.setError(err.response);
+      }
+  }
 
   async loadVersion(versionId) {
     const { changelistUrl } = this.props;
     const { template } = this.state;
     const url = changelistUrl + `${template.pk}/version/${versionId}/`;
-    const result = await this.makeRequest(url, null);
-    console.log('version data:', result);
-    return result;
+
+    try {
+      const result = await request('post', url, null);
+      return result;
+
+    } catch(err) {
+      this.setError(err.response);
+      throw err;
+    }
   }
 
   showNotify(title, msg) {
@@ -103,13 +138,12 @@ export default class App extends Component {
   }
 
   render() {
-    const { variables, template, previewHtml, iframeKey } = this.state;
+    const { variables, template, previewHtml, iframeKey, errors } = this.state;
     const links = Link.state(this, 'template').pick('layout', 'enabled', 'subject', 'body');
 
     const actions = {
       save: ::this.save,
-      sendTest: ::this.sendTest,
-      refresh: ::this.refreshPreview,
+      preview: ::this.preview,
       loadVersion: ::this.loadVersion
     };
 
@@ -120,6 +154,7 @@ export default class App extends Component {
 s         links={links}
           template={template.template}
           variables={variables}
+          errors={errors}
         />
         <div className={styles.divider} />
         <Preview key={iframeKey} html={previewHtml} />

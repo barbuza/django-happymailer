@@ -1,3 +1,5 @@
+import logging
+
 import html2text
 import six
 import trafaret as t
@@ -9,8 +11,12 @@ from django.utils.module_loading import import_string
 
 from . import fake
 from .utils import all_template_classes, all_layout_classes, get_layout, TemplateConfigurationError
+from .backends.base import InvalidVariableException
+
 
 __all__ = ('Template', 'Layout', 't')
+
+logger = logging.getLogger(__name__)
 
 
 class BasicMeta(type):
@@ -122,8 +128,8 @@ class Template(six.with_metaclass(TemplateMeta)):
         if _force_variables:
             self.variables = _force_variables
         else:
-            self.variables = self.variables.check_and_return(self.get_variables())
             self.post_init()
+            self.variables = self.variables.check_and_return(self.get_variables())
 
     def post_init(self):
         pass
@@ -168,7 +174,9 @@ class Template(six.with_metaclass(TemplateMeta)):
 
     def render(self):
         layout = self.layout_cls()
-        body = DjangoTemplate(self.body).render(Context(self.variables))
+        dj_tmpl = DjangoTemplate(self.body)
+        dj_tmpl.engine.string_if_invalid = InvalidVariableException()
+        body = dj_tmpl.render(Context(self.variables))
         return six.text_type(DjangoTemplate(layout.content).render(Context(dict(layout.variables, body=body))))
 
     def compile(self):

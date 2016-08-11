@@ -10,6 +10,7 @@ from django.http import Http404, JsonResponse, HttpResponseBadRequest, HttpRespo
 from django.contrib.admin.utils import unquote
 from django.core.serializers.json import DjangoJSONEncoder
 from django.template.response import TemplateResponse
+from django.template.exceptions import TemplateSyntaxError
 from django.db import transaction
 
 from . import fake
@@ -38,6 +39,7 @@ class FakedataForm(forms.Form):
     body = forms.CharField(required=False)
     subject = forms.CharField(required=False)
     variables = forms.CharField(required=False)
+    send_test = forms.BooleanField(required=False, initial=False)
 
     def __init__(self, *args, **kwargs):
         super(FakedataForm, self).__init__(*args, **kwargs)
@@ -47,6 +49,23 @@ class FakedataForm(forms.Form):
 
 class ImportForm(forms.Form):
     import_file = forms.FileField()
+
+
+def render_key(x, variables=None):
+    if variables is None:
+        variables = {}
+
+    if isinstance(x.trafaret, trafaret.Dict):
+        value = [render_key(k, variables.get(x.name)) for k in x.trafaret.keys]
+    else:
+        value = variables.get(x.name, fake.generate(x.trafaret))
+
+    return {
+        'name': x.name,
+        'type': repr(x.trafaret),
+        'value': value,
+        'valueType': x.trafaret.__class__.__name__.lower()
+    }
 
 
 @admin.register(TemplateModel)
@@ -67,9 +86,8 @@ class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
         admin_view = self.admin_site.admin_view
         info = self.get_model_info()
         extras = [
-            url(r'^preview/$', admin_view(self.preview_view), name='%s_%s_preview' % info),
-            url(r'^send_test/$', admin_view(self.send_test_view), name='%s_%s_send_test' % info),
-            url(r'^([^/]+)/version/([^/]+)/$', admin_view(self.history_view), name='%s_%s_version' % info),
+            url(r'^preview/$', admin_view(self.preview_action), name='%s_%s_preview' % info),
+            url(r'^([^/]+)/version/([^/]+)/$', admin_view(self.version_action), name='%s_%s_version' % info),
             url(r'^export/$', admin_view(self.export_action), name='%s_%s_export' % info),
             url(r'^import/$', admin_view(self.import_action), name='%s_%s_import' % info),
         ]
@@ -116,26 +134,33 @@ class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
                     item_defaults = dict(**item)
                     del item_defaults['history']
 
-                    template, created = TemplateModel.objects.get_or_create(
+                    template, created = TemplateModel.objects.update_or_create(
                         name=item['name'],
-                        defaults=item_defaults)
+                        defaults=item_defaults,
+                    )
 
                     if created:
                         created_cnt += 1
-                        for h in item['history']:
-                            template.history.create(**h)
-
                     else:
-                        if item['version'] > template.version:
-                            # to avoid post_save signal
-                            TemplateModel.objects.filter(pk=template.pk).update(**item_defaults)
-                            updated_cnt += 1
+                        updated_cnt += 1
 
-                            for h in item['history']:
-                                if h['version'] > template.version:
-                                    new_h = template.history.create(**h)
-                                    new_h.archived_at = h['archived_at']
-                                    new_h.save()
+                    template.history.all().delete()
+                    for h in item['history']:
+                        template.history.create(**h)
+
+                    template_cls = get_template(template.name)
+                    kwargs = fake.generate(template_cls.kwargs)
+                    variables = template_cls.fake_variables()
+                    variables = [render_key(x, variables) for x in template.variables.keys]
+                    instance = template_cls(None, _force_variables=variables, **kwargs)
+
+                    try:
+                        instance.compile()
+                    except CompileError as e:
+                        messages.warning(request, '%s got compile error: %r' % (template.name, str(e)))
+                        template.has_error = True
+                        template.enabled = False
+                        template.save_base(raw=True)
 
             messages.info(request, '%d templates added, %d templates updated' % (created_cnt, updated_cnt))
 
@@ -148,17 +173,17 @@ class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
         context['form'] = form
         context['opts'] = self.model._meta
 
-        request.current_app = self.admin_site.name
+        # request.current_app = self.admin_site.name
         return TemplateResponse(request, [self.import_template_name], context)
 
-    def history_view(self, request, object_id, version):
+    def version_action(self, request, object_id, version):
         try:
             obj = HistoricalTemplate.objects.get(
                 template=object_id,
                 version=version,
             )
         except HistoricalTemplate.DoesNotExist:
-            return Http404()
+            return JsonResponse({'version': 'Unknown version'}, status=403)
 
         return JsonResponse({
             'data': {
@@ -169,49 +194,38 @@ class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
             }
         })
 
-    def preview_view(self, request):
+    def preview_action(self, request):
         form = FakedataForm(request.POST)
         if not form.is_valid():
-            print(form.errors)
-            return HttpResponseBadRequest()
+            return JsonResponse({'form': form.errors}, status=400)
 
         variables = json.loads(form.cleaned_data['variables'])
         template_cls = get_template(form.cleaned_data['template'])
         layout_cls = get_layout(form.cleaned_data['layout'])
         kwargs = fake.generate(template_cls.kwargs)
+        send_test = form.cleaned_data['send_test']
 
-        tmpl = template_cls('spam', _force_layout_cls=layout_cls, _force_variables=variables, **kwargs)
-        tmpl.body = form.cleaned_data['body']
+        recipient = '{} <{}>'.format(request.user.get_full_name(), request.user.email) if send_test else None
 
-        try:
-            compiled = tmpl.compile()
-        except CompileError:
-            return HttpResponseBadRequest()
-
-        return JsonResponse({
-            'html': compiled,
-        })
-
-    def send_test_view(self, request):
-        form = FakedataForm(request.POST)
-        if not form.is_valid():
-            print('errors:', form.errors)
-            return HttpResponseBadRequest()
-
-        variables = json.loads(form.cleaned_data['variables'])
-        template_cls = get_template(form.cleaned_data['template'])
-        layout_cls = get_layout(form.cleaned_data['layout'])
-        kwargs = fake.generate(template_cls.kwargs)
-
-        recipient = '{} <{}>'.format(request.user.get_full_name(), request.user.email)
         tmpl = template_cls(recipient, _force_layout_cls=layout_cls, _force_variables=variables, **kwargs)
         tmpl.body = form.cleaned_data['body']
         tmpl.subject = "Test: {}".format(form.cleaned_data['subject'])
-        tmpl.send(force=True)
+
+        try:
+            compiled = tmpl.compile()
+        except (CompileError, TemplateSyntaxError) as e:
+            return JsonResponse({
+                'template': str(e)
+            }, status=400)
+
+        if send_test:
+            tmpl.send(force=True)
 
         return JsonResponse({
-            'mail': recipient,
+            'html': compiled,
+            'email': recipient,
         })
+
 
     def get_actions(self, request):
         return None
@@ -232,9 +246,9 @@ class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
                 form = ModelForm(request.POST, request.FILES, instance=obj)
                 if form.is_valid():
                     new_object = form.save()
-                    return JsonResponse(dict(status='ok'))
+                    return JsonResponse({'success': True})
                 else:
-                    return JsonResponse(dict(status='error', errors=form.errors))
+                    return JsonResponse({'success': False, 'errors': form.errors})
 
             template = None
             for cls in template_classes:
@@ -245,23 +259,6 @@ class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
                 raise Http404()
 
             variables = template.fake_variables()
-
-            def render_key(x, variables=None):
-                if variables is None:
-                    variables = {}
-
-                if isinstance(x.trafaret, trafaret.Dict):
-                    value = [ render_key(k, variables.get(x.name)) for k in x.trafaret.keys]
-                else:
-                    value = variables.get(x.name, fake.generate(x.trafaret))
-
-                return {
-                    'name': x.name,
-                    'type': repr(x.trafaret),
-                    'value': value,
-                    'valueType': x.trafaret.__class__.__name__.lower()
-                }
-
 
             history_options = [{
                 'value': v.version,
@@ -285,7 +282,6 @@ class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
                     'changelistUrl': reverse('admin:happymailer_templatemodel_changelist'),
                     'changeUrl': reverse('admin:happymailer_templatemodel_change', args=[obj.pk]),
                     'previewUrl': reverse('admin:happymailer_templatemodel_preview'),
-                    'sendtestUrl': reverse('admin:happymailer_templatemodel_send_test'),
                     'layouts': [{'value': cls.name, 'label': cls.description or cls.name}
                                 for cls in layout_classes],
                     'variables': [render_key(x, variables) for x in template.variables.keys],

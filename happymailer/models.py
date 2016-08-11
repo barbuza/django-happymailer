@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 __all__ = ('TemplateModel', 'HistoricalTemplate',)
 
@@ -20,7 +21,7 @@ class TemplateModel(models.Model):
     version = models.IntegerField(default=0)
     enabled = models.BooleanField(default=False)
     has_errors = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
     objects = TemplateModelQueryset.as_manager()
@@ -42,7 +43,7 @@ class HistoricalTemplate(models.Model):
     subject = models.TextField(null=True)
     body = models.TextField()
     version = models.IntegerField()
-    archived_at = models.DateTimeField(auto_now_add=True)
+    archived_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return '%s' % self.version

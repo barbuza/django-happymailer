@@ -33,19 +33,24 @@ export default class Form extends Component {
 
   async setVersion(versionId) {
     const { links, actions } = this.props;
-    const result = await actions.loadVersion(versionId);
-    const { body, subject, layout } = result.data;
 
-    if (subject) links.subject.set(subject);
-    if (layout) links.layout.set(layout);
-    if (body) links.body.set(body);
+    try {
+      const result = await actions.loadVersion(versionId);
+      const {body, subject, layout} = result.data;
 
-    this.setState({'version': versionId});
-    actions.refresh();
+      if (subject) links.subject.set(subject);
+      if (layout) links.layout.set(layout);
+      if (body) links.body.set(body);
+
+      this.setState({'version': versionId});
+      actions.preview();
+
+    } catch(err) {};
+
   };
 
   render() {
-    const { links, template, actions, variables } = this.props;
+    const { links, template, actions, variables, errors } = this.props;
 
     links.subject.check(x => x);
     links.body.check(x => x);
@@ -56,6 +61,7 @@ export default class Form extends Component {
           <div>{template}</div>
         </Row>
         <Row label='Version'>
+          <div className={styles.error}>{errors.version}</div>
           <Select value={this.state.version}
                   onChange={value => ::this.setVersion(value.value)}
                   clearable={false}
@@ -85,6 +91,7 @@ export default class Form extends Component {
         </Row>
 
         <Row label='Body'>
+          <div className={styles.error}>{errors.template}</div>
           <Codemirror mode='mjml' valueLink={links.body}/>
         </Row>
 
@@ -96,8 +103,8 @@ export default class Form extends Component {
                    onClick={() => actions.save(false) }
                    disabled={ links.subject.error || links.body.error } />
             <p className='deletelink-box'>
-                <input type="button" value="Preview" onClick={actions.refresh} />
-                <input type="button" value="Send Test" onClick={actions.sendTest} />
+                <input type="button" value="Preview" onClick={() => actions.preview()} />
+                <input type="button" value="Send Test" onClick={() => actions.preview(true)} />
             </p>
         </div>
       </div>
