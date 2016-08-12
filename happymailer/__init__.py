@@ -80,12 +80,10 @@ class Layout(six.with_metaclass(LayoutMeta)):
     description = None
     abstract = True
     variables = {}
-    kwargs = {}
     content = None
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         assert not self.abstract
-        self.kwargs = self.kwargs.check_and_return(kwargs)
         self.variables = self.variables.check_and_return(self.get_variables())
 
     def get_variables(self):
@@ -180,7 +178,6 @@ class Template(six.with_metaclass(TemplateMeta)):
         dj_tmpl.engine.string_if_invalid = InvalidVariableException()
         body = dj_tmpl.render(Context(self.variables))
         dj_tmpl.engine.string_if_invalid = ''
-        layout.variables.update(self.variables)
         return six.text_type(DjangoTemplate(layout.content).render(Context(dict(layout.variables, body=body))))
 
     def compile(self):
