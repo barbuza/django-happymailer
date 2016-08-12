@@ -18,7 +18,7 @@ class TemplateModel(models.Model):
     layout = models.SlugField(null=True)
     subject = models.TextField(null=True)
     body = models.TextField(null=True)
-    version = models.IntegerField(default=0)
+    version = models.IntegerField(default=1)
     enabled = models.BooleanField(default=False)
     has_errors = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)

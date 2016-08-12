@@ -44,9 +44,4 @@ class Migration(migrations.Migration):
             name='template',
             field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='history', to='happymailer.TemplateModel'),
         ),
-        migrations.AlterField(
-            model_name='templatemodel',
-            name='version',
-            field=models.IntegerField(default=0),
-        ),
     ]
