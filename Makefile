@@ -5,7 +5,7 @@ PYTHON_BIN=${VENV}/bin/python
 
 NODE_BIN=./node_modules/.bin
 
-all: webpack bdist
+all: webpack build
 
 dev: webpack
 	${PIP_BIN} install -e .
@@ -13,8 +13,8 @@ dev: webpack
 webpack:
 	npm run build
 
-bdist:
-	${PYTHON_BIN} setup.py bdist --format=gztar
+build:
+	${PYTHON_BIN} setup.py bdist_wheel
 
 uninstall:
 	${PIP_BIN} uninstall django_happymailer
@@ -22,4 +22,4 @@ uninstall:
 clean:
 	rm -rf django_happymailer.egg-info
 	rm -rf happymailer/static
-	rm -rf {build,dist}
+	rm -rf build dist
