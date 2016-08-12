@@ -5,7 +5,7 @@ PYTHON_BIN=${VENV}/bin/python
 
 NODE_BIN=./node_modules/.bin
 
-all: webpack build
+all: clean build
 
 dev: webpack
 	${PIP_BIN} install -e .
@@ -13,7 +13,7 @@ dev: webpack
 webpack:
 	npm run build
 
-build:
+build: webpack
 	${PYTHON_BIN} setup.py bdist_wheel
 
 uninstall:
