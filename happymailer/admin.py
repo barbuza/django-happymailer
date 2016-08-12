@@ -5,17 +5,16 @@ from django import forms
 from django.conf import settings
 from django.conf.urls import url
 from django.contrib import admin, messages
-from django.core.urlresolvers import reverse
-from django.http import Http404, JsonResponse, HttpResponseBadRequest, HttpResponse, HttpResponseRedirect
 from django.contrib.admin.utils import unquote
 from django.core.serializers.json import DjangoJSONEncoder
-from django.template.response import TemplateResponse
-from django.template.exceptions import TemplateSyntaxError
+from django.core.urlresolvers import reverse
 from django.db import transaction
+from django.http import Http404, JsonResponse, HttpResponse, HttpResponseRedirect
+from django.template.exceptions import TemplateSyntaxError
+from django.template.response import TemplateResponse
 
 from . import fake
 from .backends.base import CompileError
-from .mixins import TemplateImportExportMixin
 from .models import TemplateModel, HistoricalTemplate
 from .utils import layout_classes, template_classes, get_template, get_layout
 
@@ -81,7 +80,7 @@ def render_react_key(x, variables=None):
 
 
 @admin.register(TemplateModel)
-class TemplateAdmin(TemplateImportExportMixin, admin.ModelAdmin):
+class TemplateAdmin(admin.ModelAdmin):
     list_display = ('name', 'enabled', 'has_errors', 'version', 'subject', 'updated_at')
     readonly_fields = ('name',)
     form = TemplateAdminForm
