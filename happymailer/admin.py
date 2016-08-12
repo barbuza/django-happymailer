@@ -1,7 +1,5 @@
 import json
 
-import trafaret
-from django import forms
 from django.conf import settings
 from django.conf.urls import url
 from django.contrib import admin, messages
@@ -15,68 +13,9 @@ from django.template.response import TemplateResponse
 
 from . import fake
 from .backends.base import CompileError
+from .forms import TemplateAdminForm, FakedataForm, ImportForm
 from .models import TemplateModel, HistoricalTemplate
-from .utils import layout_classes, template_classes, get_template, get_layout
-
-
-class TemplateAdminForm(forms.ModelForm):
-    subject = forms.CharField(widget=forms.Textarea(attrs={'class': 'vLargeTextField'}))
-    layout = forms.ChoiceField(choices=[])
-
-    def __init__(self, *args, **kwargs):
-        super(TemplateAdminForm, self).__init__(*args, **kwargs)
-        self.fields['layout'].choices = [(cls.name, cls.description or cls.name) for cls in layout_classes]
-
-    class Meta:
-        model = TemplateModel
-        fields = ('layout', 'subject', 'body', 'enabled',)
-
-
-class FakedataForm(forms.Form):
-    layout = forms.CharField()
-    template = forms.CharField()
-    body = forms.CharField(required=False)
-    subject = forms.CharField(required=False)
-    variables = forms.CharField(required=False)
-    send_test = forms.BooleanField(required=False, initial=False)
-
-    def __init__(self, *args, **kwargs):
-        super(FakedataForm, self).__init__(*args, **kwargs)
-        self.fields['layout'].choices = [(cls.name, cls.name) for cls in layout_classes]
-        self.fields['template'].choices = [(cls.name, cls.name) for cls in template_classes]
-
-
-class ImportForm(forms.Form):
-    import_file = forms.FileField()
-
-
-def render_python_key(x, variables=None):
-    if variables is None:
-        variables = {}
-
-    if isinstance(x.trafaret, trafaret.Dict):
-        value = {k.name: render_python_key(k, variables.get(x.name)) for k in x.trafaret.keys}
-    else:
-        value = variables.get(x.name, fake.generate(x.trafaret))
-
-    return value
-
-
-def render_react_key(x, variables=None):
-    if variables is None:
-        variables = {}
-
-    if isinstance(x.trafaret, trafaret.Dict):
-        value = [render_react_key(k, variables.get(x.name)) for k in x.trafaret.keys]
-    else:
-        value = variables.get(x.name, fake.generate(x.trafaret))
-
-    return {
-        'name': x.name,
-        'type': repr(x.trafaret),
-        'value': value,
-        'valueType': x.trafaret.__class__.__name__.lower()
-    }
+from .utils import layout_classes, template_classes, get_template, get_layout, render_react_key, template_compile_check
 
 
 @admin.register(TemplateModel)
@@ -159,19 +98,11 @@ class TemplateAdmin(admin.ModelAdmin):
                     for h in item['history']:
                         template.history.create(**h)
 
-                    template_cls = get_template(template.name)
-                    kwargs = fake.generate(template_cls.kwargs)
-                    variables = template_cls.fake_variables()
-                    variables = {x.name: render_python_key(x, variables) for x in template_cls.variables.keys}
-                    instance = template_cls(None, _force_variables=variables, **kwargs)
-
                     try:
-                        instance.compile()
+                        template_cls = get_template(template.name)
+                        template_compile_check(template_cls)
                     except CompileError as e:
                         messages.warning(request, '%s got compile error: %r' % (template.name, str(e)))
-                        template.has_error = True
-                        template.enabled = False
-                        template.save_base(raw=True)
 
             messages.info(request, '%d templates added, %d templates updated' % (created_cnt, updated_cnt))
 

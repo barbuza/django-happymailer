@@ -135,7 +135,7 @@ class EnabledCase(TestCase):
 class MigrationCase(TransactionTestCase):
     def test_created(self):
         stdout = six.StringIO()
-        call_command('create_email_templates', stdout=stdout)
+        call_command('create_email_templates', no_check=True, stdout=stdout)
         self.assertIn('welcome', stdout.getvalue())
         self.assertIn('dummy', stdout.getvalue())
         self.assertTrue(TemplateModel.objects.filter(name='welcome').exists())
