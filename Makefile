@@ -14,7 +14,7 @@ webpack:
 	npm run build
 
 bdist:
-	${PYTHON_BIN} setup.py bdist --format=tar.gz
+	${PYTHON_BIN} setup.py bdist --format=gztar
 
 uninstall:
 	${PIP_BIN} uninstall django_happymailer
