@@ -1,7 +1,7 @@
 diff-match-patch==20121119
 Django==1.9.7
 django-import-export==0.4.5
-fake-factory==0.5.9
+fake-factory==0.5.7
 html2text==2016.5.29
 python-dateutil==2.5.3
 six==1.10.0
