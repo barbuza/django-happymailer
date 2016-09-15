@@ -18,6 +18,6 @@ class MjmlBackend(Backend):
         out = out.decode('utf-8')
         if proc.returncode:
             raise CompileError(out)
-        if '/lib/node_modules/mjml/' in out:
+        if 'node_modules/mjml' in out:
             raise CompileError(out)
         return out

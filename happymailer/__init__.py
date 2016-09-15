@@ -10,9 +10,8 @@ from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 
 from . import fake
-from .utils import all_template_classes, all_layout_classes, get_layout, TemplateConfigurationError
 from .backends.base import InvalidVariableException
-
+from .utils import all_template_classes, all_layout_classes, get_layout, TemplateConfigurationError
 
 __all__ = ('Template', 'Layout', 't')
 
@@ -191,8 +190,15 @@ class Template(six.with_metaclass(TemplateMeta)):
         subject = six.text_type(DjangoTemplate(self.subject).render(Context(self.variables)))
         html = self.compile()
         text = html2text.html2text(html)
-        send_mail(subject, text, settings.HAPPYMAILER_FROM, recipient_list=self.recipients(),
-                  html_message=html, fail_silently=False)
+        self._send(subject, text, settings.HAPPYMAILER_FROM, recipient_list=self.recipients(),
+                   html_message=html, fail_silently=False)
+
+    def _send(self, subject, message, from_email, recipient_list,
+              fail_silently=False, auth_user=None, auth_password=None,
+              connection=None, html_message=None):
+        send_mail(subject, message, from_email, recipient_list,
+                  fail_silently, auth_user, auth_password,
+                  connection, html_message)
 
     @classmethod
     def check(cls):

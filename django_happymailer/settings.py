@@ -118,7 +118,12 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 HAPPYMAILER_BACKEND = 'happymailer.backends.MjmlBackend'
-HAPPYMAILER_MJML_BIN = ['mjml']
+
+if os.path.isfile('node_modules/.bin/mjml'):
+    HAPPYMAILER_MJML_BIN = ['node_modules/.bin/mjml']
+else:
+    HAPPYMAILER_MJML_BIN = ['mjml']
+
 HAPPYMAILER_FROM = 'test@example.com'
 
 if DEBUG:
