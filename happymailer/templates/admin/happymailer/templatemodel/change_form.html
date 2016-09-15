@@ -2,9 +2,12 @@
 {% load i18n admin_urls admin_static admin_modify %}
 
 {% block content %}
+<div id="content-main">
   <div id="react-app"></div>
-  <script>
-    window.happymailerConfig = {{ happymailer_config|safe }};
-  </script>
-  <script type="text/javascript" src="{% static 'happymailer/client.js' %}"></script>
+</div>
+
+<script>
+window.happymailerConfig = {{ happymailer_config|safe }};
+</script>
+<script type="text/javascript" src="{% static 'happymailer/client.js' %}"></script>
 {% endblock %}

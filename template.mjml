@@ -1,0 +1,58 @@
+<mjml>
+  <mj-head>
+    <mj-attributes>
+      <mj-class name="tm-heading" color="#000" font-size="17px" font-weight="600" padding="0px 25px" />
+      <mj-class name="tm-text" background-color="#fff" color="#818181" font-size="14px" padding="0px 25px" />
+      <mj-class name="tm-button" background-color="#5cb85c" font-size="15px" text-transform="uppercase" />
+      <mj-class name="tm-section" background-color="#ffffff"/>
+    </mj-attributes>
+  </mj-head>
+  <mj-body>
+    <mj-container background-color="#f8f8f8">
+      <mj-section "full-width">
+        <mj-column>
+          <mj-image src="https://s3-us-west-2.amazonaws.com/tutorme-public/CORRECT.png" width="180" href="https://tutorme.com" alt="TutorMe" />
+        </mj-column>
+      </mj-section>
+
+      <mj-section "full-width" background-color="#fff">
+        <mj-column>
+          <mj-text mj-class="tm-heading">
+            <p>Welcome to Tutorme, [Username]!</p>
+          </mj-text>
+          <mj-text mj-class="tm-text" align="justify">
+            <p>We are excited to have you as the newest member of our innovative learning community. You can now start looking for that perfect tutor. Whether you need help with a calculus assignment or want to learn how to build a website, you're in good
+              hands.</p>
+          </mj-text>
+          <mj-button href="https://tutorme.com" mj-class="tm-button">Get Started</mj-button>
+          <mj-text mj-class="tm-text" align="justify">
+            <p></p>We really hope you enjoy learning from our world-class tutors. Should you need any help getting started, please visit our <a href="">Help Center</a> or email us at <a href="">support@tutorme.com</a>.</p>
+            <p>We are excited to help you change the way your learn!</p>
+          </mj-text>
+        </mj-column>
+      </mj-section>
+
+      <mj-section "full-width" background-color="#fff">
+        <mj-column>
+          <mj-text mj-class="tm-text">Sincerely, <br/>The TutorMe Team</mj-text>
+        </mj-column>
+      </mj-section>
+
+      <mj-section>
+        <mj-column>
+          <mj-social
+            display="facebook:url twitter:url google:url"
+            text-mode="false"
+            facebook-href="https://www.facebook.com/tutormecom/"
+            facebook-icon-color="#888F97"
+            twitter-href="https://twitter.com/tutorme_hq"
+            twitter-icon-color="#888F97"
+            google-href="https://plus.google.com/+TutorMe_HQ/videos"
+            google-icon-color="#888F97"
+          />
+        </mj-column>
+      </mj-section>
+
+    </mj-container>
+  </mj-body>
+</mjml>

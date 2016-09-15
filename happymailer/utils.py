@@ -1,7 +1,11 @@
 import os.path
 
+import trafaret
 from django.apps import apps
 from django.utils.module_loading import import_module
+
+from . import fake
+from .backends.base import CompileError
 
 __all__ = ('all_template_classes', 'template_classes', 'all_layout_classes',
            'layout_classes', 'find_templates', 'get_layout', 'get_template',
@@ -79,3 +83,48 @@ def find_templates():
                 break
         if found:
             layout_classes.append(cls)
+
+
+def template_compile_check(cls):
+    kwargs = fake.generate(cls.kwargs)
+    variables = cls.fake_variables()
+    variables = {x.name: render_python_key(x, variables) for x in cls.variables.keys}
+    instance = cls(None, _force_variables=variables, **kwargs)
+
+    try:
+        instance.compile()
+    except CompileError as e:
+        model = instance.model
+        model.has_error = True
+        model.enabled = False
+        model.save_base(raw=True)
+        raise
+
+
+def render_python_key(x, variables=None):
+    if variables is None:
+        variables = {}
+
+    if isinstance(x.trafaret, trafaret.Dict):
+        value = {k.name: render_python_key(k, variables.get(x.name)) for k in x.trafaret.keys}
+    else:
+        value = variables.get(x.name, fake.generate(x.trafaret))
+
+    return value
+
+
+def render_react_key(x, variables=None):
+    if variables is None:
+        variables = {}
+
+    if isinstance(x.trafaret, trafaret.Dict):
+        value = [render_react_key(k, variables.get(x.name)) for k in x.trafaret.keys]
+    else:
+        value = variables.get(x.name, fake.generate(x.trafaret))
+
+    return {
+        'name': x.name,
+        'type': repr(x.trafaret),
+        'value': value,
+        'valueType': x.trafaret.__class__.__name__.lower()
+    }

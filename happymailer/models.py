@@ -1,10 +1,12 @@
 from django.db import models
+from django.utils import timezone
 
 __all__ = ('TemplateModel', 'HistoricalTemplate',)
 
 
 class TemplateModelQueryset(models.QuerySet):
-    pass
+    def active(self):
+        return self.filter(enabled=True, has_errors=False)
 
 
 class TemplateModel(models.Model):
@@ -17,6 +19,8 @@ class TemplateModel(models.Model):
     body = models.TextField(null=True)
     version = models.IntegerField(default=1)
     enabled = models.BooleanField(default=False)
+    has_errors = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
     objects = TemplateModelQueryset.as_manager()
@@ -33,10 +37,15 @@ class HistoricalTemplate(models.Model):
     """
     stores previous versions of TemplateModel
     """
-    template = models.ForeignKey(TemplateModel)
+    template = models.ForeignKey(TemplateModel, related_name='history')
+    layout = models.SlugField(null=True)
+    subject = models.TextField(null=True)
     body = models.TextField()
     version = models.IntegerField()
-    archived_at = models.DateTimeField(auto_now_add=True)
+    archived_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return '%s' % self.version
 
     class Meta:
         ordering = ('-version',)

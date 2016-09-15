@@ -118,11 +118,8 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 HAPPYMAILER_BACKEND = 'happymailer.backends.MjmlBackend'
-HAPPYMAILER_MJML_BIN = [
-    '~/.nvm/versions/node/v5.9.1/bin/node',
-    '~/.nvm/versions/node/v5.9.1/bin/mjml'
-]
-HAPPYMAILER_FROM = 'test@test.com'
+HAPPYMAILER_MJML_BIN = ['mjml']
+HAPPYMAILER_FROM = 'test@example.com'
 
-EMAIL_BACKEND = "sgbackend.SendGridBackend"
-SENDGRID_API_KEY = "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"
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

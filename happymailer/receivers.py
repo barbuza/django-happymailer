@@ -29,11 +29,15 @@ def update_history(instance, **kwargs):
 
     if instance.version != instance.db_version:
         version = instance.version
-        body = instance.body
 
         @transaction.on_commit
         def save():
-            instance.historicaltemplate_set.create(version=version, body=body)
+            instance.history.create(
+                version=version,
+                body=instance.body,
+                subject=instance.subject,
+                layout=instance.layout,
+            )
 
 
 @receiver(setting_changed)

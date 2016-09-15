@@ -83,15 +83,19 @@ class BasicsCase(TestCase):
             TestTemplate('spam', foo='bar', spam='eggs')
 
     def test_find_templates(self):
+
         with override_settings(INSTALLED_APPS=[]):
             self.assertListEqual(template_classes, [])
             self.assertListEqual(layout_classes, [])
+
         with override_settings(INSTALLED_APPS=['dummy']):
             self.assertListEqual(template_classes, [WelcomeTemplate])
             self.assertListEqual(layout_classes, [BasicLayout])
+
         with override_settings(INSTALLED_APPS=['dummy2']):
             self.assertListEqual(template_classes, [DummyTemplate])
             self.assertListEqual(layout_classes, [])
+
         with override_settings(INSTALLED_APPS=['dummy', 'dummy2']):
             self.assertSetEqual(set(template_classes), {WelcomeTemplate, DummyTemplate})
             self.assertSetEqual(set(layout_classes), {BasicLayout})
@@ -131,7 +135,7 @@ class EnabledCase(TestCase):
 class MigrationCase(TransactionTestCase):
     def test_created(self):
         stdout = six.StringIO()
-        call_command('create_email_templates', stdout=stdout)
+        call_command('create_email_templates', no_check=True, stdout=stdout)
         self.assertIn('welcome', stdout.getvalue())
         self.assertIn('dummy', stdout.getvalue())
         self.assertTrue(TemplateModel.objects.filter(name='welcome').exists())
@@ -158,18 +162,18 @@ class HistoryCase(TransactionTestCase):
         with transaction.atomic():
             model = TemplateModel.objects.create(name='foo')
 
-        self.assertEqual(model.historicaltemplate_set.count(), 0)
+        self.assertEqual(model.history.count(), 0)
 
         with transaction.atomic():
             model.save()
 
-        self.assertEqual(model.historicaltemplate_set.count(), 0)
+        self.assertEqual(model.history.count(), 0)
 
         with transaction.atomic():
             model.body = 'spam'
             model.save()
 
-        self.assertEqual(model.historicaltemplate_set.count(), 1)
+        self.assertEqual(model.history.count(), 1)
 
 
 class LayoutCase(TestCase):
@@ -196,41 +200,30 @@ class LayoutCase(TestCase):
         self.assertIsNone(AbstractLayout.check())
         self.assertIsNone(SomeLayout.check())
 
-    def test_kwargs(self):
-        class TestLayout(Layout):
-            kwargs = {'foo': t.String()}
-
-        self.assertDictEqual(TestLayout(foo='bar').kwargs, {'foo': 'bar'})
-
-        with self.assertRaises(t.DataError):
-            TestLayout()
 
     def test_variables(self):
         class TestLayout(Layout):
-            kwargs = {'foo': t.String() | t.Int()}
             variables = {'foo': t.String()}
 
             def get_variables(self):
-                return {'foo': self.kwargs['foo']}
+                return {'foo': 'bar'}
 
-        self.assertDictEqual(TestLayout(foo='bar').variables, {'foo': 'bar'})
-
-        with self.assertRaises(t.DataError):
-            TestLayout(foo=1)
+        self.assertDictEqual(TestLayout().variables, {'foo': 'bar'})
 
 
 class ComplexCase(TestCase):
     def test_complex(self):
         class ComplexLayout(Layout):
             name = 'complex'
-            kwargs = {'foo': t.String()}
             variables = {'foo': t.String()}
 
             def render(self, content=None):
                 return dict(self.variables)
 
             def get_variables(self):
-                return self.kwargs
+                return {
+                    'foo': 'bar'
+                }
 
         class ComplexTemplate(Template):
             name = 'complex'
@@ -238,7 +231,7 @@ class ComplexCase(TestCase):
             variables = {'spam': t.String()}
 
             def render(self):
-                layout = self.layout_cls(**self.kwargs)
+                layout = self.layout_cls()
                 return layout.render(), dict(self.variables)
 
             def get_variables(self):
@@ -263,21 +256,19 @@ class RenderCase(TestCase):
             name = 'empty'
             content = '{{ body }}'
 
-        class LoopLayout(Layout):
-            name = 'loop'
-            content = '{% for i in range %}{{ body }}{% endfor %}'
-            kwargs = {'count': t.Int()}
-            variables = {'range': t.Any()}
-
-            def get_variables(self):
-                return {
-                    'range': range(self.kwargs['count'])
-                }
+        class WrapLayout(Layout):
+            name = 'wrap'
+            content = 'wrap{{ body }}wrap'
 
         class TestTemplate(Template):
             name = 'test'
-            variables = {}
+            variables = {'count': t.Any()}
             kwargs = {'count': t.Int()}
+
+            def get_variables(self):
+                return {
+                    'count': self.kwargs['count']
+                }
 
         find_templates()
 
@@ -286,19 +277,22 @@ class RenderCase(TestCase):
         tmpl = TestTemplate('spam', count=3)
         self.assertEqual(tmpl.render(), '')
 
-        model.body = 'test'
+        model.body = '{{ count }}test'
         model.save()
 
         tmpl = TestTemplate('spam', count=3)
-        self.assertEqual(tmpl.render(), 'test')
+        self.assertEqual(tmpl.render(), '3test')
 
-        model.layout = 'loop'
+        model.layout = 'wrap'
         model.save()
 
         tmpl = TestTemplate('spam', count=3)
-        self.assertEqual(tmpl.render(), 'testtesttest')
+        self.assertEqual(tmpl.render(), 'wrap3testwrap')
 
 
+@override_settings(
+    EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend'
+)
 class CompileCase(TestCase):
     def setUp(self):
         class TestLayout(Layout):
@@ -331,7 +325,7 @@ class CompileCase(TestCase):
         self.assertIn('foo bar spam eggs', self.tmpl.compile())
 
     def test_send_and_plaintext(self):
-        self.tmpl.send()
+        self.tmpl.send(force=True)
         self.assertEqual(mail.outbox[0].subject, 'hello, world!')
         self.assertIn('foo bar spam eggs', mail.outbox[0].body)
         self.assertIn('https://github.com/', mail.outbox[0].body)

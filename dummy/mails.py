@@ -1,4 +1,4 @@
-from happymailer import Template, Layout
+from happymailer import Template, Layout, t
 
 
 class BasicLayout(Layout):
@@ -28,5 +28,10 @@ class BasicLayout(Layout):
 
 class WelcomeTemplate(Template):
     name = 'welcome'
-    layout = 'base'
-    variables = {}
+    layout = 'basic'
+    kwargs = variables = {
+        'username': t.String(),
+    }
+
+    def get_variables(self):
+        self.kwargs

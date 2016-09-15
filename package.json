@@ -1,7 +1,9 @@
 {
   "private": true,
+  "name": "happymailer",
   "scripts": {
-    "start": "webpack -w"
+    "start": "webpack -w",
+    "build": "webpack --bail"
   },
   "dependencies": {
     "autoprefixer": "^6.3.6",

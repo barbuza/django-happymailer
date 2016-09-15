@@ -1,4 +1,7 @@
 /db.sqlite3
+/build
+/dist
+/*.egg-info
 /.idea
 /venv
 /node_modules

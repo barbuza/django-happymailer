@@ -1,3 +1,5 @@
+import logging
+
 import html2text
 import six
 import trafaret as t
@@ -9,8 +11,12 @@ from django.utils.module_loading import import_string
 
 from . import fake
 from .utils import all_template_classes, all_layout_classes, get_layout, TemplateConfigurationError
+from .backends.base import InvalidVariableException
+
 
 __all__ = ('Template', 'Layout', 't')
+
+logger = logging.getLogger(__name__)
 
 
 class BasicMeta(type):
@@ -20,6 +26,13 @@ class BasicMeta(type):
     def __new__(mcs, name, bases, dct):
         dct.setdefault('abstract', False)
         abstract = dct['abstract']
+
+        base_variables = t.Dict({})
+
+        for klass in bases:
+            variables = getattr(klass, 'variables', None)
+            if variables:
+                base_variables = base_variables.merge(variables)
 
         if 'kwargs' in dct:
             kwargs = dct.pop('kwargs')
@@ -35,7 +48,7 @@ class BasicMeta(type):
             variables = dct.pop('variables')
             if not abstract or variables is not None:
                 assert isinstance(variables, dict)
-                variables = t.Dict(**variables)
+                variables = base_variables.merge(variables)
                 if mcs.ignore_extra:
                     variables = variables.ignore_extra('*')
 
@@ -58,17 +71,19 @@ class TemplateMeta(BasicMeta):
     registry = all_template_classes
 
 
+class MessageMeta(BasicMeta):
+    pass
+
+
 class Layout(six.with_metaclass(LayoutMeta)):
     name = None
     description = None
     abstract = True
     variables = {}
-    kwargs = {}
     content = None
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         assert not self.abstract
-        self.kwargs = self.kwargs.check_and_return(kwargs)
         self.variables = self.variables.check_and_return(self.get_variables())
 
     def get_variables(self):
@@ -91,22 +106,39 @@ class Template(six.with_metaclass(TemplateMeta)):
     kwargs = {}
     abstract = True
 
-    def __init__(self, recipient, _force_layout_cls=None, _force_variables=None, **kwargs):
+    def __init__(self, recipient=None, _force_layout_cls=None, _force_variables=None, **kwargs):
         assert not self.abstract
-        self.recipient = recipient
+
+        self._recipients = []
+        if recipient:
+            self._recipients.append(recipient)
+
         if _force_layout_cls:
             self.layout_cls = _force_layout_cls
         else:
             self.layout_cls = None
             if self.layout:
                 self.layout_cls = get_layout(self.layout)
+
         if not self.layout_cls:
             raise TemplateConfigurationError('no layout specified for {} template'.format(self.name))
+
         self.kwargs = self.kwargs.check_and_return(kwargs)
+
         if _force_variables:
             self.variables = _force_variables
         else:
+            self.post_init()
             self.variables = self.variables.check_and_return(self.get_variables())
+
+    def post_init(self):
+        pass
+
+    def add_recipient(self, recipient):
+        self._recipients.append(recipient)
+
+    def recipients(self):
+        return self._recipients
 
     @classmethod
     def fake_variables(cls):
@@ -141,8 +173,11 @@ class Template(six.with_metaclass(TemplateMeta)):
         return {}
 
     def render(self):
-        layout = self.layout_cls(**self.kwargs)
-        body = DjangoTemplate(self.body).render(Context(self.variables))
+        layout = self.layout_cls()
+        dj_tmpl = DjangoTemplate(self.body)
+        dj_tmpl.engine.string_if_invalid = InvalidVariableException()
+        body = dj_tmpl.render(Context(self.variables))
+        dj_tmpl.engine.string_if_invalid = ''
         return six.text_type(DjangoTemplate(layout.content).render(Context(dict(layout.variables, body=body))))
 
     def compile(self):
@@ -150,11 +185,13 @@ class Template(six.with_metaclass(TemplateMeta)):
         backend = backend_cls()
         return backend.compile(self.render())
 
-    def send(self):
+    def send(self, force=False):
+        if not self.enabled and not force:
+            return
         subject = six.text_type(DjangoTemplate(self.subject).render(Context(self.variables)))
         html = self.compile()
         text = html2text.html2text(html)
-        send_mail(subject, text, settings.HAPPYMAILER_FROM, recipient_list=[self.recipient],
+        send_mail(subject, text, settings.HAPPYMAILER_FROM, recipient_list=self.recipients(),
                   html_message=html, fail_silently=False)
 
     @classmethod
