@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='django-happymailer',
-    version='0.1.4',
+    version='0.1.5',
     description='django email templates manager',
     author='Victor Kotcheruba',
     author_email='barbuzaster@gmail.com',
@@ -19,3 +19,4 @@ setup(
         'six',
     ]
 )
+
