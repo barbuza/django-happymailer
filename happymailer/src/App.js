@@ -14,7 +14,6 @@ function reduce_vars(items) {
 }
 
 async function request(method, url, data = null) {
-  console.log(`method ${method} ${url}`);
   const csrfToken = cookie.parse(document.cookie).csrftoken;
   let options = {
     method,
@@ -70,7 +69,6 @@ export default class App extends Component {
   }
 
   async preview(sendTest=false) {
-      console.log("preview: ", sendTest);
       const { template } = this.state;
       const { previewUrl } = this.props;
       let { variables } = this.state;
@@ -151,13 +149,13 @@ export default class App extends Component {
       <div className={styles.root}>
         <Form
           actions={actions}
-s         links={links}
+          links={links}
           template={template.template}
           variables={variables}
           errors={errors}
         />
         <div className={styles.divider} />
-        <Preview key={iframeKey} html={previewHtml} />
+        <Preview iframeKey={iframeKey} html={previewHtml} />
         <Notify ref='notificator'/>
       </div>
     );

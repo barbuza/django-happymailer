@@ -1,8 +1,9 @@
 import { resolve } from 'path';
 import autoprefixer from 'autoprefixer';
 import { EnvironmentPlugin, NoErrorsPlugin } from 'webpack';
+import UglifyJsPlugin from 'webpack/lib/optimize/UglifyJsPlugin';
 
-export default {
+const config = {
   context: resolve('.'),
   entry: {
     client: './happymailer/src/index'
@@ -60,4 +61,10 @@ export default {
     ]),
     new NoErrorsPlugin()
   ]
+};
+
+if (process.env.NODE_ENV === 'production') {
+  config.plugins.push(new UglifyJsPlugin({ comments: /a^/, compress: { warnings: false } }));
 }
+
+export default config;
