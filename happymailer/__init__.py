@@ -14,6 +14,9 @@ from .utils import all_template_classes, all_layout_classes, get_layout, Templat
 from .backends.base import InvalidVariableException
 
 
+default_app_config = 'happymailer.apps.HappymailerConfig'
+
+
 __all__ = ('Template', 'Layout', 't')
 
 logger = logging.getLogger(__name__)
