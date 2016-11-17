@@ -12,8 +12,8 @@ setup(
     packages=find_packages(exclude=['django_happymailer','dummy','dummy2']),
     install_requires=[
         'django >= 1.9',
-        'django-import-export == 0.4.5',
-        'fake-factory == 0.5.7',
+        'django-import-export >= 0.4.5',
+        'fake-factory >= 0.5.7',
         'html2text == 2016.5.29',
         'trafaret >= 0.7',
         'six',
