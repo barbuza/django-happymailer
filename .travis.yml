@@ -9,9 +9,10 @@ env:
 install:
 - rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && (cd ~/.nvm && git checkout `git describe --abbrev=0 --tags`) && source ~/.nvm/nvm.sh && nvm install $TRAVIS_NODE_VERSION
 - npm install -g mjml
-- pip install tox-travis
+- pip install tox-travis coveralls
 
-script: tox
+script:
+- tox
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
+- test $TRAVIS_PYTHON_VERSION = "3.5" && coveralls
