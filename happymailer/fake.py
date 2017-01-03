@@ -41,4 +41,7 @@ def generate(trafaret):
     elif isinstance(trafaret, t.Null):
         return
 
+    elif isinstance(trafaret, t.Bool):
+        return bool(random.randint(0, 1))
+
     raise NotImplementedError(repr(trafaret))
