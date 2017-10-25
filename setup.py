@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='django-happymailer',
-    version='0.1.9',
+    version='0.1.10',
     description='django email templates manager',
     author='Victor Kotcheruba',
     author_email='barbuzaster@gmail.com',
@@ -13,9 +13,9 @@ setup(
     install_requires=[
         'django >= 1.9',
         'django-import-export >= 0.4.5',
-        'fake-factory >= 0.5.7',
+        'faker >= 0.8.6',
         'html2text >= 2016.5.29',
-        'trafaret >= 0.7',
+        'trafaret >= 0.7, <= 0.8',
         'six',
     ]
 )

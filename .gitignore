@@ -8,3 +8,4 @@
 /happymailer/static
 __pycache__
 *.pyc
+/.tox
