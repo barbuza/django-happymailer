@@ -5,7 +5,7 @@ from django.conf.urls import url
 from django.contrib import admin, messages
 from django.contrib.admin.utils import unquote
 from django.core.serializers.json import DjangoJSONEncoder
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db import transaction
 from django.http import Http404, JsonResponse, HttpResponse, HttpResponseRedirect
 from django.template.exceptions import TemplateSyntaxError

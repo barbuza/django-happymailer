@@ -37,7 +37,7 @@ class HistoricalTemplate(models.Model):
     """
     stores previous versions of TemplateModel
     """
-    template = models.ForeignKey(TemplateModel, related_name='history')
+    template = models.ForeignKey(TemplateModel, related_name='history', on_delete=models.CASCADE)
     layout = models.SlugField(null=True)
     subject = models.TextField(null=True)
     body = models.TextField()
