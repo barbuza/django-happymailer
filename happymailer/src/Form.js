@@ -61,9 +61,11 @@ export default class Form extends Component {
           <div>{template}</div>
         </Row>
         <Row label='Version'>
-          <div className={styles.error}>{errors.version}</div>
+          {errors &&
+            <div className={styles.error}>{errors.version}</div>
+          }
           <Select value={this.state.version}
-                  onChange={value => ::this.setVersion(value.value)}
+                  onChange={value => this.setVersion(value.value)}
                   clearable={false}
                   options={window.happymailerConfig.history} />
         </Row>
@@ -91,7 +93,9 @@ export default class Form extends Component {
         </Row>
 
         <Row label='Body'>
-          <div className={styles.error}>{errors.template}</div>
+          {errors &&
+            <div className={styles.error}>{errors.template}</div>
+          }
           <Codemirror mode='mjml' valueLink={links.body}/>
         </Row>
 

@@ -1,14 +1,34 @@
 import React from 'react';
 
-const Preview = ({html, iframeKey})=> (
-  <div className={styles.root}>
-    <div className={styles.iphone5}>
-      <iframe seamless
-              key={iframeKey}
-              src={`data:text/html;charset=utf-8,${html}`}
-              className={styles.frame}/>
-    </div>
-  </div>
-);
+export default class Preview extends React.PureComponent {
 
-export default Preview;
+  componentDidMount() {
+    this.setIframeContent();
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.html !== this.props.html) {
+      this.setIframeContent();
+    }
+  }
+
+  render() {
+    return (
+      <div className={styles.root}>
+        <div className={styles.iphone5}>
+          <iframe
+            src="about:blank"
+            ref="iframe"
+            className={styles.frame}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  setIframeContent() {
+    this.refs.iframe.contentDocument.write(this.props.html);
+    this.refs.iframe.contentDocument.close();
+  }
+
+}

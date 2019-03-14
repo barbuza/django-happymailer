@@ -68,7 +68,7 @@ export default class App extends Component {
     });
   }
 
-  async preview(sendTest=false) {
+  preview = async (sendTest=false) => {
       const { template } = this.state;
       const { previewUrl } = this.props;
       let { variables } = this.state;
@@ -96,7 +96,7 @@ export default class App extends Component {
       }
   }
 
-  async save(redirect=true) {
+  save = async (redirect=true) => {
       const { changeUrl, changelistUrl } = this.props;
       const { template } = this.state;
 
@@ -116,7 +116,7 @@ export default class App extends Component {
       }
   }
 
-  async loadVersion(versionId) {
+  loadVersion = async (versionId) => {
     const { changelistUrl } = this.props;
     const { template } = this.state;
     const url = changelistUrl + `${template.pk}/version/${versionId}/`;
@@ -140,9 +140,9 @@ export default class App extends Component {
     const links = Link.state(this, 'template').pick('layout', 'enabled', 'subject', 'body');
 
     const actions = {
-      save: ::this.save,
-      preview: ::this.preview,
-      loadVersion: ::this.loadVersion
+      save: this.save,
+      preview: this.preview,
+      loadVersion: this.loadVersion,
     };
 
     return (

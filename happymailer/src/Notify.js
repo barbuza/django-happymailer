@@ -38,7 +38,7 @@ export default class Notify extends Component {
         }, duration);
     }
     
-    hideNotification(key) {
+    hideNotification = (key) => {
         console.log('hide: ', key);
         delete this.state[key];
         this.setState(this.state);
@@ -49,7 +49,7 @@ export default class Notify extends Component {
         return (
           <div className={styles.container}>
             {keys.map((key) =>
-              <Item id={key} key={key} hideNotification={::this.hideNotification} {...this.state[key]} />
+              <Item id={key} key={key} hideNotification={this.hideNotification} {...this.state[key]} />
             )}    
           </div>  
         );
