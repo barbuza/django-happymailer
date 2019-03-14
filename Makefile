@@ -1,4 +1,4 @@
-VENV=./venv/
+VENV=./venv
 
 PIP_BIN=${VENV}/bin/pip
 PYTHON_BIN=${VENV}/bin/python
