@@ -6,6 +6,7 @@ import Select from 'react-select';
 import 'react-select/dist/react-select.css';
 import Codemirror from './Codemirror';
 import Variables from './Variables';
+import styles from './Form.scss';
 
 const Row = ({ label, children }) => (
   <div className={styles.row}>

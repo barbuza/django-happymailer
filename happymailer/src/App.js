@@ -5,6 +5,7 @@ import Preview from './Preview';
 import Notify from './Notify';
 import cookie from 'cookie';
 import qs from 'qs';
+import styles from './App.scss';
 
 function reduce_vars(items) {
     return items.reduce((prev, item) => {

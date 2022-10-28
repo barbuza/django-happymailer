@@ -1,5 +1,6 @@
 import React, { Component, PropTypes } from 'react';
 import classnames from 'classnames';
+import styles from './Notify.scss';
 
 const Item = ({id, title, msg, theme, hideNotification}) => (
     <div className={classnames(styles.item, theme)} onClick={() => hideNotification(id)}>

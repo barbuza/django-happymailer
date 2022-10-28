@@ -1,5 +1,5 @@
 import React from 'react';
-
+import styles from './Preview.scss'
 export default class Preview extends React.PureComponent {
 
   componentDidMount() {

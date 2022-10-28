@@ -11,6 +11,7 @@ import 'codemirror/addon/hint/xml-hint';
 import 'codemirror/addon/hint/show-hint';
 import 'codemirror/addon/mode/overlay';
 import './mjml';
+import styles from './Codemirror.scss';
 
 
 export default class Codemirror extends Component {

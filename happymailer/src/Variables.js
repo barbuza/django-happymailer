@@ -1,4 +1,5 @@
 import React from 'react';
+import styles from './Variables.scss';
 
 const ListVariable = ({ values }) => (
     <ul>
