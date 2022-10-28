@@ -86,7 +86,7 @@ class Layout(six.with_metaclass(LayoutMeta)):
 
     def __init__(self):
         assert not self.abstract
-        self.variables = self.variables.check_and_return(self.get_variables())
+        self.variables = self.variables.check(self.get_variables())
 
     def get_variables(self):
         return {}
@@ -125,13 +125,13 @@ class Template(six.with_metaclass(TemplateMeta)):
         if not self.layout_cls:
             raise TemplateConfigurationError('no layout specified for {} template'.format(self.name))
 
-        self.kwargs = self.kwargs.check_and_return(kwargs)
+        self.kwargs = self.kwargs.check(kwargs)
 
         if _force_variables:
             self.variables = _force_variables
         else:
             self.post_init()
-            self.variables = self.variables.check_and_return(self.get_variables())
+            self.variables = self.variables.check(self.get_variables())
 
     def post_init(self):
         pass

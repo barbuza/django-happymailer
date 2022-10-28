@@ -7,9 +7,9 @@ class DummyTemplate(Template):
     layout = 'basic'
 
     kwargs = variables = {
-        'name': t.String(),
-        'code': t.String(),
-        'email': t.Email()
+        'name': t.String,
+        'code': t.String,
+        'email': t.Email
     }
 
     def get_variables(self):

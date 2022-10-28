@@ -1,9 +1,9 @@
 dist: xenial
 language: python
 python:
-- "3.5"
-- "3.6"
-- "3.7"
+- "3.9"
+- "3.10"
+- "3.11"
 
 env:
 - TRAVIS_NODE_VERSION="10"
@@ -17,4 +17,4 @@ script:
 - tox
 
 after_success:
-- test $TRAVIS_PYTHON_VERSION = "3.7" && coveralls
+- test $TRAVIS_PYTHON_VERSION = "3.9" && coveralls

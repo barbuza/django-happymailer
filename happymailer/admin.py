@@ -1,7 +1,7 @@
 import json
 
 from django.conf import settings
-from django.conf.urls import url
+from django.urls import re_path, path
 from django.contrib import admin, messages
 from django.contrib.admin.utils import unquote
 from django.core.serializers.json import DjangoJSONEncoder
@@ -36,10 +36,10 @@ class TemplateAdmin(admin.ModelAdmin):
         admin_view = self.admin_site.admin_view
         info = self.get_model_info()
         extras = [
-            url(r'^preview/$', admin_view(self.preview_action), name='%s_%s_preview' % info),
-            url(r'^([^/]+)/version/([^/]+)/$', admin_view(self.version_action), name='%s_%s_version' % info),
-            url(r'^export/$', admin_view(self.export_action), name='%s_%s_export' % info),
-            url(r'^import/$', admin_view(self.import_action), name='%s_%s_import' % info),
+            path('preview/', admin_view(self.preview_action), name='%s_%s_preview' % info),
+            re_path(r'^([^/]+)/version/([^/]+)/$', admin_view(self.version_action), name='%s_%s_version' % info),
+            path('export/', admin_view(self.export_action), name='%s_%s_export' % info),
+            path('import/', admin_view(self.import_action), name='%s_%s_import' % info),
         ]
         return extras + urls
 

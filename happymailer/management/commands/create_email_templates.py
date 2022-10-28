@@ -7,7 +7,6 @@ class Command(BaseCommand):
     create db templates
     """
     can_import_settings = True
-    requires_system_checks = True
     output_transaction = True
 
     def add_arguments(self, parser):

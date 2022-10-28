@@ -8,10 +8,10 @@ fake = Factory.create(settings.LANGUAGE_CODE)
 
 
 def generate(trafaret):
-    if isinstance(trafaret, t.Email):
+    if trafaret is t.Email:
         return fake.email()
 
-    elif isinstance(trafaret, t.URL):
+    elif trafaret is t.URL:
         return fake.url()
 
     elif isinstance(trafaret, t.String):

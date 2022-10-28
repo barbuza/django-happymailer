@@ -11,11 +11,11 @@ setup(
     include_package_data=True,
     packages=find_packages(exclude=['django_happymailer','dummy','dummy2']),
     install_requires=[
-        'django >= 3.0',
+        'django >= 3.2.4, < 4.0',
         'django-import-export >= 0.4.5',
         'faker >= 0.8.6',
         'html2text >= 2016.5.29',
-        'trafaret >= 0.7, <= 0.8',
+        'trafaret >= 2.1, < 3.0',
         'six',
     ]
 )

@@ -30,7 +30,7 @@ class WelcomeTemplate(Template):
     name = 'welcome'
     layout = 'basic'
     kwargs = variables = {
-        'username': t.String(),
+        'username': t.String,
     }
 
     def get_variables(self):

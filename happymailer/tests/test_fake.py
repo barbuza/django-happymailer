@@ -10,10 +10,10 @@ class FakeCase(SimpleTestCase):
         self.assertIsInstance(generate(t.String()), six.text_type)
 
     def test_email(self):
-        self.assertIn('@', generate(t.Email()))
+        self.assertIn('@', generate(t.Email))
 
     def test_url(self):
-        self.assertIn('://', generate(t.URL()))
+        self.assertIn('://', generate(t.URL))
 
     def test_int(self):
         self.assertIsInstance(generate(t.Int()), int)
